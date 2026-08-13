@@ -3,7 +3,7 @@
    为 Owncast (https://owncast.online) 网页前端复刻的 YouTube 直播深色风格主题
    --------------------------------------------------------------------------
    作者: KobayashiKotori
-   版本: v2.4 · 2026-08
+   版本: v2.5 · 2026-08
    许可: MIT License
          Copyright (c) 2026 KobayashiKotori
          Permission is hereby granted, free of charge, to any person
@@ -692,6 +692,19 @@ div:has(> em-emoji-picker) {
 }
 div:has(> em-emoji-picker)::-webkit-scrollbar {
   display: none !important;
+}
+
+/* Go to last message 按钮: 消息过多时右下角悬浮按钮, 修复黑底黑字 */
+[class*="toBottomWrap"] .ant-btn-default {
+  background-color: #272727 !important;
+  border-color: #303030 !important;
+  color: #f1f1f1 !important;
+}
+[class*="toBottomWrap"] .ant-btn-default:hover,
+[class*="toBottomWrap"] .ant-btn-default:focus {
+  background-color: #3f3f3f !important;
+  border-color: #3f3f3f !important;
+  color: #ffffff !important;
 }
 
 /* 10. 离线横幅: YouTube 深色卡片 ----------------------------------------------------- */
