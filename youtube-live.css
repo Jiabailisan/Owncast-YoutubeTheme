@@ -3,7 +3,7 @@
    为 Owncast (https://owncast.online) 网页前端复刻的 YouTube 直播深色风格主题
    --------------------------------------------------------------------------
    作者: KobayashiKotori
-   版本: v2.0 · 2026-08
+   版本: v2.4 · 2026-08
    许可: MIT License
          Copyright (c) 2026 KobayashiKotori
          Permission is hereby granted, free of charge, to any person
@@ -179,7 +179,7 @@ a:hover {
 }
 
 /* 5. 播放器 ------------------------------------------------------------------- */
-/* 容器: 左右留白 + 顶部与聊天卡片对齐; 严格 16:9 由 aspect-ratio 保证 */
+/* 播放器: 左右留白 + 顶部与聊天卡片对齐; 高度由视频内容决定, max-height 72vh 保护超高屏 */
 #player {
   margin: 16px 24px 0;
   height: auto !important;
@@ -388,18 +388,38 @@ a:hover {
 div:has(> .ant-row > #player) {
   position: relative;
 }
-/* 操作按钮行: 绝对定位到直播介绍右上角 (与播放器右对齐 + 顶部对齐) */
+/* 开播(页面存在 #player)时: 绝对定位到直播介绍右上角 (与播放器右对齐 + 顶部对齐)
+   仅桌面生效; 移动端在下方 media query 中恢复为静态 */
+@media (min-width: 769px) {
+  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
+    position: absolute;
+    /* 播放器高度受 72vh 限制, 定位公式需同步取 min */
+    top: calc(16px + min(72vh, (100vw - 432px) * 9 / 16) + 60px);
+    right: 12px;   /* 补偿行内 12px 内部边距, 使按钮右边缘与播放器右边缘对齐 */
+    z-index: 5;
+  }
+}
+/* 操作按钮行通用样式: 关播(无 #player)时保持文档流, 右对齐 */
 .ant-row:has([class*="actionButtonsContainer"]) {
-  position: absolute;
-  /* 播放器高度受 72vh 限制, 定位公式需同步取 min */
-  top: calc(16px + min(72vh, (100vw - 432px) * 9 / 16) + 60px);
-  right: 12px;   /* 补偿行内 12px 内部边距, 使按钮右边缘与播放器右边缘对齐 */
-  z-index: 5;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   padding: 0;
   margin: 0;
+}
+/* 关播(页面存在 #offline-message)时: notify 与频道介绍上对齐、右边缘与离线卡片对齐
+   实现: 介绍行上移(margin-top 负值)与按钮行重叠, notify 自然显示在介绍行右侧;
+   margin-top = -(按钮行高 56 - 按钮行内垂直偏移 12) = -44px, 随文档流自适应 */
+@media (min-width: 769px) {
+  div:has(> .ant-row > #offline-message):not(:has(> .ant-row > #player)) > .ant-row:has([class*="actionButtonsContainer"]) {
+    position: relative;
+    z-index: 5;             /* 按钮保持在介绍行内容之上, 可点击 */
+    padding-right: 12px;    /* 补偿行内 12px 内部边距, 使按钮右边缘与离线卡片右边缘对齐 */
+  }
+  div:has(> .ant-row > #offline-message):not(:has(> .ant-row > #player)) > .ant-row:has(> div > #skip-to-content) {
+    margin-top: -44px;
+  }
 }
 .ant-row:has([class*="actionButtonsContainer"]) .ant-btn {
   height: 36px;
@@ -859,7 +879,6 @@ div:has(> em-emoji-picker)::-webkit-scrollbar {
   }
   /* 操作按钮恢复正常流 (移动端为浮动菜单, 不参与 order 避免打乱布局) */
   .ant-row:has([class*="actionButtonsContainer"]) {
-    position: static;
     padding: 0 16px;
   }
   div:has(> .ant-row > #player) {
@@ -952,7 +971,4 @@ img[alt='Logo'] {
   object-position: center;
 }
 
-/* 16. (可选) 隐藏默认元素示例 ---------------------------------------------------------
-   取消注释即可启用, 例如隐藏页脚的 "Powered by Owncast":
-   #owncast-powered-by-text { display: none; }
-   ---------------------------------------------------------------------------------- */
+/* 16. (可选) 隐藏元素示例: 需要时自行添加, 如 #owncast-powered-by-text { display: none; } */
