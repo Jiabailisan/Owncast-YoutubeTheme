@@ -1,0 +1,86 @@
+/* 1. 背景全透明: 页面与聊天容器全部透明, 仅保留消息本身 */
+html:has(.readonly-chat),
+body:has(.readonly-chat),
+#__next:has(.readonly-chat),
+#chat-container.readonly-chat,
+#chat-container.readonly-chat #virtuoso {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 2. 页面占满视口, 禁止 body 滚动 (聊天内部自行滚动) */
+html:has(.readonly-chat),
+body:has(.readonly-chat) {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+#chat-container.readonly-chat {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+#chat-container.readonly-chat #virtuoso {
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* 3. 隐藏顶部伪元素栏 ("Live chat" 头部 + 齿轮, 来自主站主题 #chat-container::before/::after) */
+#chat-container.readonly-chat::before,
+#chat-container.readonly-chat::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* 4. 隐藏所有滚动条 (OBS 里不应看到滚动条) */
+#chat-container.readonly-chat,
+#chat-container.readonly-chat * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#chat-container.readonly-chat ::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 5. 单条消息: 半透明深底 + 圆角 + 左侧用户色粗边 */
+#chat-container.readonly-chat .chat-message_user {
+  margin: 3px 12px !important;   /* 左右留白, 避免消息贴边 */
+  padding: 0 !important;
+}
+#chat-container.readonly-chat [class*="ChatUserMessage_root"] {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  padding: 5px 10px !important;
+  border-radius: 8px !important;
+  border-left-width: 3px !important;   /* 保留 Owncast 的 border-color(用户色) */
+  border-left-style: solid !important;
+  border-right-width: 0 !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 6. 用户名: 保持用户彩色 + 加粗 + 投影 */
+#chat-container.readonly-chat [class*="ChatUserMessage_user"] {
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* 7. 消息内容: 白色 + 投影, 直播叠加清晰可读 */
+#chat-container.readonly-chat [class*="ChatUserMessage_message"] {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  word-break: break-word !important;
+}
+#chat-container.readonly-chat [class*="ChatUserMessage_message"] p {
+  margin: 0 !important;
+}
