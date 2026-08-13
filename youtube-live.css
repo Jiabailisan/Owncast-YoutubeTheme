@@ -1,9 +1,9 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    YouTube Live Theme
    为 Owncast (https://owncast.online) 网页前端复刻的 YouTube 直播深色风格主题
    --------------------------------------------------------------------------
    作者: KobayashiKotori
-   版本: v1.0 · 2026-08
+   版本: v2.0 · 2026-08
    许可: MIT License
          Copyright (c) 2026 KobayashiKotori
          Permission is hereby granted, free of charge, to any person
@@ -12,11 +12,6 @@
          without limitation the rights to use, copy, modify, merge,
          publish, distribute, sublicense, and/or sell copies.
    --------------------------------------------------------------------------
-   使用方法:
-     1. 打开 Owncast 管理后台 -> General Settings -> Custom Styles
-     2. 将本文件全部内容粘贴到 "Custom Styles" 文本框并保存
-     3. 刷新网站首页即可看到效果
-
    说明:
      - 通过覆盖 Owncast 官方 CSS 变量 + 全局 class/id 实现, 不依赖哈希类名。
      - 无法访问 Google Fonts 时, 删除第 1 节的 @import 即可回退系统字体。
@@ -394,10 +389,11 @@ div:has(> .ant-row > #player) {
   position: relative;
 }
 /* 操作按钮行: 绝对定位到直播介绍右上角 (与播放器右对齐 + 顶部对齐) */
-.ant-row:has(#follow-button) {
+.ant-row:has([class*="actionButtonsContainer"]) {
   position: absolute;
-  top: calc(16px + (100vw - 432px) * 9 / 16 + 60px);
-  right: 24px;
+  /* 播放器高度受 72vh 限制, 定位公式需同步取 min */
+  top: calc(16px + min(72vh, (100vw - 432px) * 9 / 16) + 60px);
+  right: 12px;   /* 补偿行内 12px 内部边距, 使按钮右边缘与播放器右边缘对齐 */
   z-index: 5;
   display: flex;
   align-items: center;
@@ -405,7 +401,7 @@ div:has(> .ant-row > #player) {
   padding: 0;
   margin: 0;
 }
-.ant-row:has(#follow-button) .ant-btn {
+.ant-row:has([class*="actionButtonsContainer"]) .ant-btn {
   height: 36px;
   padding: 0 16px;
   border-radius: 18px;
@@ -420,7 +416,7 @@ div:has(> .ant-row > #player) {
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.1s ease;
 }
-.ant-row:has(#follow-button) .ant-btn:hover {
+.ant-row:has([class*="actionButtonsContainer"]) .ant-btn:hover {
   transform: scale(1.02);
 }
 /* Follow = 红色订阅按钮 */
@@ -436,12 +432,12 @@ div:has(> .ant-row > #player) {
   border-color: #cc0000 !important;
 }
 /* 其他操作按钮: 深灰胶囊 */
-.ant-row:has(#follow-button) .ant-btn:not(#follow-button) {
+.ant-row:has([class*="actionButtonsContainer"]) .ant-btn:not(#follow-button) {
   background-color: #272727;
   border-color: transparent;
   color: #f1f1f1;
 }
-.ant-row:has(#follow-button) .ant-btn:not(#follow-button):hover {
+.ant-row:has([class*="actionButtonsContainer"]) .ant-btn:not(#follow-button):hover {
   background-color: #3f3f3f;
   border-color: transparent;
   color: #ffffff;
@@ -861,17 +857,10 @@ div:has(> em-emoji-picker)::-webkit-scrollbar {
     min-height: 40px;
     border-radius: 20px;
   }
-  /* 操作按钮恢复正常流, 介绍在上/操作按钮在下 */
-  .ant-row:has(#follow-button) {
+  /* 操作按钮恢复正常流 (移动端为浮动菜单, 不参与 order 避免打乱布局) */
+  .ant-row:has([class*="actionButtonsContainer"]) {
     position: static;
-    padding: 8px 16px 12px;
-    order: 5;
-  }
-  .ant-row:has(#follow-button) + .ant-row {
-    order: 4;
-  }
-  .ant-row:has(#follow-button) + .ant-row + .ant-row {
-    order: 6;
+    padding: 0 16px;
   }
   div:has(> .ant-row > #player) {
     position: static;
@@ -898,6 +887,22 @@ div:has(> em-emoji-picker)::-webkit-scrollbar {
   /* ContentHeader 容器与播放器左对齐 (MobileContent 无 #skip-to-content) */
   div:has(> div > div > div > div > img[alt='Logo']) {
     margin-left: 16px !important;
+  }
+  /* 移动端浮动操作菜单: 按钮右边缘与播放器右对齐、顶部与头像齐平
+     (按钮放回菜单容器内 flex 布局, 让 antd 弹出菜单正常向下展开) */
+  .ant-row:has([class*="actionButtonsContainer"]) [class*="mobileActionButtons"] {
+    right: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 32px !important;   /* 下移, 按钮与头像顶部对齐 */
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-end !important;   /* 按钮贴右, 右边缘与播放器对齐 */
+    width: auto !important;
+  }
+  .ant-row:has([class*="actionButtonsContainer"]) [class*="mobileActionButtons"] button {
+    position: static !important;
+    margin: 0 !important;
   }
   /* 移动端聊天按钮: 红色胶囊 */
   #mobile-chat-button {
