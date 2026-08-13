@@ -1,0 +1,953 @@
+﻿/* ==========================================================================
+   YouTube Live Theme
+   为 Owncast (https://owncast.online) 网页前端复刻的 YouTube 直播深色风格主题
+   --------------------------------------------------------------------------
+   作者: KobayashiKotori
+   版本: v1.0 · 2026-08
+   许可: MIT License
+         Copyright (c) 2026 KobayashiKotori
+         Permission is hereby granted, free of charge, to any person
+         obtaining a copy of this software and associated documentation
+         files, to deal in the Software without restriction, including
+         without limitation the rights to use, copy, modify, merge,
+         publish, distribute, sublicense, and/or sell copies.
+   --------------------------------------------------------------------------
+   使用方法:
+     1. 打开 Owncast 管理后台 -> General Settings -> Custom Styles
+     2. 将本文件全部内容粘贴到 "Custom Styles" 文本框并保存
+     3. 刷新网站首页即可看到效果
+
+   说明:
+     - 通过覆盖 Owncast 官方 CSS 变量 + 全局 class/id 实现, 不依赖哈希类名。
+     - 无法访问 Google Fonts 时, 删除第 1 节的 @import 即可回退系统字体。
+     - 想保留自己的站点 Logo: 删除「顶栏」一节的 #header-logo 规则。
+   ========================================================================== */
+
+/* 1. 字体 ------------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
+/* 2. 主题变量 ---------------------------------------------------------------- */
+:root {
+  /* --- Owncast 调色板 (YouTube 深色模式) --- */
+  --color-owncast-palette-0: #0f0f0f;   /* 页面主背景 */
+  --color-owncast-palette-1: #212121;   /* 面板/卡片背景 */
+  --color-owncast-palette-2: #000000;   /* 播放器背景 */
+  --color-owncast-palette-3: #0f0f0f;   /* 主背景 */
+  --color-owncast-palette-4: #f1f1f1;   /* 主文字 */
+  --color-owncast-palette-5: #272727;   /* hover 背景 */
+  --color-owncast-palette-6: #ff0000;   /* YouTube 红 */
+  --color-owncast-palette-7: #cc0000;   /* 深红 */
+  --color-owncast-palette-8: #3f3f3f;   /* 禁用/边框色 */
+  --color-owncast-palette-9: #030303;
+  --color-owncast-palette-10: #aaaaaa;  /* 次级文字 */
+  --color-owncast-palette-11: #3ea6ff;  /* 链接蓝 */
+  --color-owncast-palette-12: #ff0000;
+  --color-owncast-palette-13: #42bea6;
+  --color-owncast-palette-14: #181818;  /* 内容背景 */
+  --color-owncast-palette-15: #f1f1f1;
+  --color-owncast-palette-error: #ff4b39;
+  --color-owncast-palette-warning: #ffc655;
+
+  /* --- 组件级派生变量 --- */
+  --theme-color-background-main: #0f0f0f;
+  --theme-color-background-header: #0f0f0f;
+  --theme-color-background-secondary: #181818;
+  --theme-color-components-content-background: #181818;
+  --theme-color-components-chat-background: #0f0f0f;
+  /* 输入容器 focus-within 背景: 默认引用 palette-4(白), 必须覆盖为深色 */
+  --theme-color-components-form-field-background: #272727;
+  --theme-color-components-chat-text: #f1f1f1;
+  --theme-color-components-menu-background: #282828;
+  --theme-color-components-menu-item-text: #f1f1f1;
+  --theme-color-components-menu-item-hover-bg: #3f3f3f;
+  --theme-color-components-menu-item-focus-bg: #4a4a4a;
+  --theme-color-components-video-background: #000000;
+  --theme-color-components-video-live-indicator: #ff0000;
+  --theme-color-components-video-status-bar-background: transparent;
+  --theme-color-components-video-status-bar-foreground: #f1f1f1;
+  --theme-color-action: #ff0000;         /* 驱动 antd primary 按钮(订阅) */
+  --theme-color-action-hover: #cc0000;
+  --theme-color-action-disabled: #5a5a5a;
+  --theme-color-error: #ff4b39;
+  --theme-color-warning: #ffc655;
+
+  /* --- 形状 / 字体 / 布局 --- */
+  --theme-rounded-corners: 12px;
+  --font-owncast-body: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-owncast-display: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --header-height: 56px;          /* Owncast 顶栏 70px -> YouTube 56px */
+  --yt-chat-width: 360px;         /* 聊天栏宽度 */
+}
+
+/* 3. 全局基础 ---------------------------------------------------------------- */
+html {
+  background-color: #0f0f0f;
+}
+body {
+  background-color: #0f0f0f;
+  color: #f1f1f1;
+  font-family: var(--font-owncast-body);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background-color: rgba(255, 0, 0, 0.45);
+  color: #fff;
+}
+a {
+  color: #3ea6ff;
+}
+a:hover {
+  color: #65b8ff;
+}
+
+/* 滚动条: YouTube 细滚动条 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f3f;
+  border-radius: 5px;
+  border: 2px solid #0f0f0f;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f3f #0f0f0f;
+}
+
+/* 4. 顶栏 ------------------------------------------------------------------- */
+.global-header {
+  height: var(--header-height) !important;
+  background-color: #0f0f0f !important;
+  border-bottom: none;
+  box-shadow: none !important;
+  padding: 0 24px !important;   /* 左右留白与播放器对齐 */
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 200;
+}
+
+/* 顶栏 Logo: 红色圆角矩形 + 白色播放三角 (想保留自己的 Logo 请删除本段) */
+#header-logo {
+  position: relative;
+  width: 40px;
+  height: 28px;
+  padding: 0 !important;
+  margin-right: 12px !important;
+  background-color: #ff0000 !important;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+#header-logo .ant-avatar {
+  background: transparent !important;
+  outline: none !important;
+}
+#header-logo img {
+  display: none;
+}
+#header-logo::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-32%, -50%);
+  border-left: 11px solid #ffffff;
+  border-top: 6.5px solid transparent;
+  border-bottom: 6.5px solid transparent;
+}
+
+/* 顶栏站名 */
+#global-header-text {
+  color: #ffffff !important;
+  font-family: var(--font-owncast-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+/* 顶栏右侧用户菜单 */
+#user-menu .ant-avatar,
+.global-header .ant-avatar {
+  background-color: #303030;
+  color: #f1f1f1;
+}
+
+/* 5. 播放器 ------------------------------------------------------------------- */
+/* 容器: 左右留白 + 顶部与聊天卡片对齐; 严格 16:9 由 aspect-ratio 保证 */
+#player {
+  margin: 16px 24px 0;
+  height: auto !important;
+  max-height: 72vh;             /* 超高屏保护, 超出时左右黑边 */
+  border-radius: 12px;
+  overflow: hidden;             /* 裁剪 poster/视频到圆角 */
+}
+.video-js {
+  background-color: #000 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* 大播放按钮: 居中 + 半透明黑圆 + SVG 三角, hover 变红
+   必须覆盖 video.js 默认左上角定位, 否则会错位 */
+.vjs-owncast .vjs-big-play-button {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 16px !important;
+  line-height: 64px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vjs-owncast .vjs-big-play-button .vjs-icon-placeholder {
+  position: static;
+  display: block;
+  width: 24px;
+  height: 30px;
+  line-height: 1;
+}
+.vjs-owncast .vjs-big-play-button .vjs-icon-placeholder::before {
+  content: '' !important;
+  font-family: inherit !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='%23ffffff'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.vjs-owncast .vjs-big-play-button:hover,
+.vjs-owncast .vjs-big-play-button:focus {
+  background-color: #ff0000 !important;
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  outline: none;
+}
+
+/* 播放/暂停状态: 播放后隐藏, 暂停时重新显示 (显式覆盖 video.js 的同特异性规则) */
+.vjs-owncast.vjs-has-started .vjs-big-play-button,
+.vjs-owncast.vjs-ended .vjs-big-play-button,
+.vjs-owncast.vjs-paused.vjs-has-started .vjs-big-play-button {
+  display: none !important;
+}
+.vjs-owncast.vjs-show-big-play-button-on-pause.vjs-paused.vjs-has-started .vjs-big-play-button {
+  display: flex !important;
+}
+
+/* 控制栏: 半透明黑色渐变 + 左右分栏布局 */
+.vjs-owncast .vjs-control-bar {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0) 100%) !important;
+  color: #ffffff !important;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 左: 播放/音量/时间/LIVE/回到直播 · 中: 进度 · 右: 画质/小窗/全屏 */
+.vjs-owncast .vjs-play-control,
+.vjs-owncast .vjs-volume-panel,
+.vjs-owncast .vjs-current-time,
+.vjs-owncast .vjs-live-control,
+.vjs-owncast .vjs-seek-to-live-control {
+  order: 0;
+}
+.vjs-owncast .vjs-progress-control,
+.vjs-owncast .vjs-custom-control-spacer {
+  order: 2;
+  flex: 1 1 auto;
+}
+.vjs-owncast .vjs-quality-selector,
+.vjs-owncast .vjs-picture-in-picture-control,
+.vjs-owncast .vjs-fullscreen-control,
+.vjs-owncast .vjs-airplay {
+  order: 3;
+}
+.vjs-owncast .vjs-quality-selector {
+  margin-left: auto;
+}
+.vjs-owncast .vjs-control {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  transition: color 0.1s ease;
+}
+.vjs-owncast .vjs-control:hover {
+  color: #ff0000 !important;
+}
+
+/* 进度条 / 音量滑块: YouTube 红色 */
+.vjs-owncast .vjs-progress-holder {
+  height: 4px;
+  border-radius: 2px;
+  transition: height 0.15s ease;
+}
+.vjs-owncast .vjs-progress-control:hover .vjs-progress-holder {
+  height: 6px;
+}
+.vjs-owncast .vjs-play-progress {
+  background-color: #ff0000 !important;
+  border-radius: 2px;
+}
+.vjs-owncast .vjs-play-progress::before {
+  color: #ff0000 !important;
+  text-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
+}
+.vjs-owncast .vjs-load-progress {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 2px;
+}
+.vjs-owncast .vjs-load-progress div {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+}
+.vjs-owncast .vjs-slider {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 2px;
+}
+.vjs-owncast .vjs-volume-level {
+  background-color: #ff0000 !important;
+}
+.vjs-owncast .vjs-volume-level::before {
+  color: #ff0000 !important;
+}
+
+/* LIVE 徽章 (控制栏内) + loading */
+.vjs-owncast .vjs-live-display {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  background-color: #ff0000;
+  border-radius: 4px;
+  padding: 2px 8px;
+  line-height: 1.6;
+  margin: 0 4px;
+}
+.vjs-owncast .vjs-seek-to-live-control.vjs-control.vjs-at-live-edge .vjs-icon-placeholder {
+  color: #ff0000 !important;
+}
+.vjs-owncast .vjs-loading-spinner {
+  color: #ffffff !important;
+  opacity: 0.85;
+}
+.vjs-owncast .vjs-loading-spinner .vjs-control-text {
+  display: none;
+}
+#player .ant-skeleton {
+  background: #000;
+}
+#player .ant-skeleton .ant-skeleton-content .ant-skeleton-paragraph > li {
+  background: #1f1f1f;
+}
+
+/* 6. 直播状态栏: 大圆角胶囊条 (直播时长 + 观看人数) ------------------------------ */
+.ant-row:has(> #player) + .ant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 24px 4px;
+  padding: 0 18px;
+  min-height: 44px;
+  background-color: #212121;
+  border-radius: 22px;
+}
+.ant-row:has(> #player) + .ant-row > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  padding: 0;
+  background-color: transparent !important;
+  color: #f1f1f1 !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 7. 操作按钮: YouTube 风格 --------------------------------------------------------- */
+/* 主列相对定位, 作为操作按钮绝对定位的包含块 */
+div:has(> .ant-row > #player) {
+  position: relative;
+}
+/* 操作按钮行: 绝对定位到直播介绍右上角 (与播放器右对齐 + 顶部对齐) */
+.ant-row:has(#follow-button) {
+  position: absolute;
+  top: calc(16px + (100vw - 432px) * 9 / 16 + 60px);
+  right: 24px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+.ant-row:has(#follow-button) .ant-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.ant-row:has(#follow-button) .ant-btn:hover {
+  transform: scale(1.02);
+}
+/* Follow = 红色订阅按钮 */
+#follow-button.ant-btn-primary {
+  background-color: #ff0000 !important;
+  border-color: #ff0000 !important;
+  color: #ffffff;
+  font-weight: 500;
+  padding: 0 18px;
+}
+#follow-button.ant-btn-primary:hover {
+  background-color: #cc0000 !important;
+  border-color: #cc0000 !important;
+}
+/* 其他操作按钮: 深灰胶囊 */
+.ant-row:has(#follow-button) .ant-btn:not(#follow-button) {
+  background-color: #272727;
+  border-color: transparent;
+  color: #f1f1f1;
+}
+.ant-row:has(#follow-button) .ant-btn:not(#follow-button):hover {
+  background-color: #3f3f3f;
+  border-color: transparent;
+  color: #ffffff;
+}
+
+/* 8. 内容区: 频道信息 + 描述 --------------------------------------------------------- */
+.header-title {
+  color: #f1f1f1 !important;
+  font-family: var(--font-owncast-display);
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  margin: 0 0 6px !important;
+}
+.header-subtitle {
+  color: #aaaaaa !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  margin: 0 0 10px !important;
+}
+.header-title + * span {
+  color: #aaaaaa;
+}
+
+/* antd Tabs: YouTube 下划线标签 */
+.ant-tabs .ant-tabs-tab {
+  color: #aaaaaa;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: color 0.15s ease;
+}
+.ant-tabs .ant-tabs-tab:hover {
+  color: #f1f1f1;
+}
+.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #f1f1f1;
+}
+.ant-tabs .ant-tabs-ink-bar {
+  background-color: #ff0000 !important;
+  height: 3px !important;
+}
+
+/* 描述卡片 */
+.ant-tabs .ant-tabs-tabpane .bottomPageContentContainer {
+  background-color: #181818;
+  border: 1px solid #303030;
+  border-radius: 12px;
+  padding: 24px;
+  color: #f1f1f1;
+  line-height: 1.6;
+}
+.bottomPageContentContainer h1,
+.bottomPageContentContainer h2,
+.bottomPageContentContainer h3 {
+  color: #f1f1f1;
+}
+.bottomPageContentContainer a {
+  color: #3ea6ff;
+}
+.bottomPageContentContainer blockquote {
+  border-left: 4px solid #3f3f3f;
+  margin: 1em 0;
+  padding-left: 1em;
+  color: #aaaaaa;
+}
+.bottomPageContentContainer code {
+  background-color: #272727;
+  color: #ff7b72;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.9em;
+}
+.bottomPageContentContainer pre {
+  background-color: #0d0d0d;
+  border: 1px solid #303030;
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* 9. 聊天面板: YouTube Live Chat 圆角悬浮卡片 -------------------------------------- */
+#chat-container {
+  position: relative;
+  width: var(--yt-chat-width) !important;
+  min-width: 300px;
+  max-width: 420px;
+  background-color: #212121 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  margin: 16px 16px 16px 8px !important;
+  height: calc(100% - 32px) !important;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+/* 头部 "Live chat" (Owncast 无此元素, 用伪元素; 想改中文把 content 换成 '直播聊天') */
+#chat-container::before {
+  content: 'Live chat';
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #f1f1f1;
+  background-color: #212121;
+  flex-shrink: 0;
+}
+/* 头部右侧齿轮图标 */
+#chat-container::after {
+  content: '\2699';
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: #717171;
+  font-size: 15px;
+  pointer-events: none;
+}
+#chat-container #virtuoso {
+  background-color: #212121;
+}
+
+/* 消息行: 圆角 + hover, 用户名(左)+内容(右)水平排列, 仅左侧 2px 用户色粗边 */
+#chat-container .chat-message_user {
+  padding: 4px 10px;
+  margin: 2px 8px;
+  border-radius: 12px;
+  transition: background-color 0.1s ease;
+}
+#chat-container .chat-message_user:hover {
+  background-color: #272727;
+}
+#chat-container .chat-message_user > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  border-left-width: 2px !important;
+  border-left-style: solid !important;
+  border-right-width: 0 !important;   /* ownMessage 默认有右边框, 清掉 */
+  border-radius: 12px;
+  overflow: hidden;                    /* 让 ownMessage 背景统一按此圆角裁剪 */
+  padding-left: 10px;
+}
+#chat-container .chat-message_user div {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #f1f1f1;
+  word-break: break-word;
+}
+#chat-container .chat-message_user span {
+  font-weight: 700;
+}
+
+/* 输入区: 与聊天栏同色, 无分隔线 */
+#chat-container div:has(> #chat-input) {
+  border-top: none !important;
+  background-color: #212121;
+}
+#chat-input {
+  background-color: #212121;
+  padding: 10px 12px 14px;
+}
+/* 输入容器 (.inputWrap): 恒为深色胶囊, 防止 focus 变白 */
+#chat-input > div:has([contenteditable]) {
+  background-color: #272727 !important;
+  border-radius: 12px;
+  box-shadow: none !important;
+}
+#chat-input > div:has([contenteditable]):focus-within {
+  background-color: #272727 !important;
+  box-shadow: none !important;
+}
+#chat-input-content-editable {
+  background-color: #272727 !important;
+  border: 1px solid #3f3f3f !important;
+  border-radius: 18px !important;
+  color: #f1f1f1 !important;
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  min-height: 36px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  scrollbar-width: none;              /* 隐藏输入框滚动条 */
+  overflow-x: auto;
+  overflow-y: auto;
+}
+#chat-input-content-editable::-webkit-scrollbar {
+  display: none;
+}
+#chat-input-content-editable:focus {
+  background-color: #272727 !important;
+  border-color: #3ea6ff !important;
+  outline: none;
+  caret-color: #f1f1f1;
+  box-shadow: none !important;
+}
+#chat-input-content-editable[contenteditable='true']:empty::before {
+  content: attr(data-placeholder);
+  color: #717171;
+}
+#owncast-emoji-picker-button,
+#owncast-send-message-button {
+  color: #f1f1f1 !important;
+  background: transparent !important;
+  border: none !important;
+}
+#owncast-send-message-button:hover {
+  color: #ff0000 !important;
+}
+
+/* emoji 面板: 深色主题 + 隐藏滚动条 (popin/popout 均生效) */
+em-emoji-picker {
+  --rgb-background: 40, 40, 40;
+  --rgb-color: 241, 241, 241;
+  --rgb-accent: 255, 0, 0;
+  --rgb-input: 39, 39, 39;
+  --sidebar-width: 0px !important;    /* 隐藏内部滚动条 */
+  --color-border: rgba(125, 125, 125, 0.55);
+  --color-border-over: rgba(160, 160, 160, 0.65);
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.ant-popover-inner {
+  border-radius: 12px;
+}
+/* emoji 面板容器: 可滚动但无滚动条, 横向裁剪 */
+div:has(> em-emoji-picker) {
+  scrollbar-width: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+div:has(> em-emoji-picker)::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 10. 离线横幅: YouTube 深色卡片 ----------------------------------------------------- */
+#offline-message {
+  padding: 12px 24px 0;
+}
+#offline-message > div {
+  background-color: #181818;
+  border: 1px solid #303030;
+  border-radius: 12px;
+  color: #f1f1f1;
+  padding: 32px 24px;
+  text-align: center;
+}
+#offline-message a.notify-link,
+#offline-message a.follow-link {
+  color: #ff0000;
+  font-weight: 700;
+  text-decoration: underline;
+}
+#offline-message .ant-divider {
+  border-color: #303030;
+}
+
+/* 11. 页脚: 默认隐藏 (YouTube 直播页无页脚) -------------------------------------------
+   想恢复品牌行: 删除下面的 #footer { display: none; }, 并取消下方注释块 */
+#footer {
+  display: none;
+}
+/*
+#footer {
+  background-color: #181818;
+  border-top: 1px solid #303030;
+  color: #717171;
+  font-size: 12px;
+  padding: 16px 24px;
+}
+#footer a {
+  color: #3ea6ff;
+}
+*/
+
+/* 12. popout 聊天独立窗口适配 -----------------------------------------------------------
+   独立页面也注入主题, 但"圆角卡片"样式会压缩聊天, 这里重置为占满窗口 */
+.embed-container > #chat-container,
+.embed-container #chat-container {
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: auto !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: var(--theme-color-components-chat-background) !important;
+}
+.embed-container #virtuoso {
+  scrollbar-width: none;
+}
+.embed-container #virtuoso::-webkit-scrollbar {
+  display: none;
+}
+.embed-container #chat-input,
+.embed-container #chat-container > div:has(> #chat-input) {
+  background-color: var(--theme-color-components-chat-background) !important;
+}
+.embed-container #chat-container::before {
+  background-color: var(--theme-color-components-chat-background) !important;
+}
+.embed-container #chat-container .chat-message_user {
+  margin: 0;
+}
+
+/* 13. antd 细节组件 ---------------------------------------------------------------- */
+.ant-dropdown-menu,
+.ant-popover-inner,
+.ant-modal-content,
+.ant-select-dropdown {
+  background-color: #282828 !important;
+  color: #f1f1f1;
+}
+.ant-dropdown-menu-item,
+.ant-popover-inner .ant-popover-inner-content {
+  color: #f1f1f1;
+}
+.ant-dropdown-menu-item:hover {
+  background-color: #3f3f3f !important;
+}
+
+/* 弹窗: 背景统一 + 内部文字强制浅色 */
+.ant-modal-header,
+.ant-modal-content,
+.ant-modal-body {
+  background-color: #484848 !important;
+}
+.ant-modal-title {
+  color: #f1f1f1 !important;
+}
+.ant-modal-close {
+  color: #aaaaaa !important;
+}
+.ant-modal-body * {
+  color: #f1f1f1 !important;        /* 所有小字强制浅色 */
+}
+.ant-modal-body a,
+.ant-modal-body a * {
+  color: #3ea6ff !important;        /* 链接恢复蓝 */
+}
+.ant-modal-body .ant-form-item-explain-error,
+.ant-modal-body .ant-form-item-explain-error * {
+  color: #ff4b39 !important;        /* 错误恢复红 */
+}
+.ant-modal-body input::placeholder,
+.ant-modal-body textarea::placeholder,
+.ant-modal-body .ant-select-selection-placeholder,
+.ant-modal-body .ant-select-selection-placeholder * {
+  color: #717171 !important;        /* 占位符恢复灰 */
+}
+.ant-modal-body .ant-form-item-extra,
+.ant-modal-body .ant-form-item-extra * {
+  color: #aaaaaa !important;        /* 说明文字恢复灰 */
+}
+
+/* 弹窗内输入框 / Select / 下拉: 深色背景 */
+.ant-modal-body .ant-input,
+.ant-modal-body .ant-input-affix-wrapper,
+.ant-modal-body textarea.ant-input,
+.ant-modal-body input,
+.ant-modal-body textarea,
+.ant-modal-body select,
+.ant-modal-body .ant-select-selector {
+  color: #f1f1f1 !important;
+  background-color: #272727 !important;
+  border-color: #3f3f3f !important;
+}
+.ant-modal-body .ant-select-selection-item {
+  color: #f1f1f1 !important;
+}
+.ant-modal-body .ant-btn-default {
+  color: #f1f1f1;
+  background-color: #272727;
+  border-color: #3f3f3f;
+}
+.ant-modal-body .ant-btn-primary {
+  background-color: #ff0000;
+  border-color: #ff0000;
+  color: #fff;
+}
+.ant-select-dropdown .ant-select-item-option {
+  color: #f1f1f1 !important;
+}
+.ant-select-dropdown .ant-select-item-option-active {
+  background-color: #3f3f3f !important;
+}
+.ant-select-dropdown .ant-select-item-option-selected {
+  background-color: #4a4a4a !important;
+}
+
+/* 全局输入框深色 */
+.ant-input,
+.ant-input-affix-wrapper {
+  background-color: #272727 !important;
+  border-color: #3f3f3f !important;
+  color: #f1f1f1 !important;
+}
+.ant-input::placeholder {
+  color: #717171 !important;
+}
+
+/* 14. 移动端 ------------------------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* 播放器: 与状态条等宽 (左右 16px) */
+  #player {
+    padding: 0;
+    margin: 0 16px !important;
+    max-height: none;
+  }
+  .ant-row:has(> #player) + .ant-row {
+    margin: 10px 16px 4px;
+    padding: 0 14px;
+    min-height: 40px;
+    border-radius: 20px;
+  }
+  /* 操作按钮恢复正常流, 介绍在上/操作按钮在下 */
+  .ant-row:has(#follow-button) {
+    position: static;
+    padding: 8px 16px 12px;
+    order: 5;
+  }
+  .ant-row:has(#follow-button) + .ant-row {
+    order: 4;
+  }
+  .ant-row:has(#follow-button) + .ant-row + .ant-row {
+    order: 6;
+  }
+  div:has(> .ant-row > #player) {
+    position: static;
+  }
+  /* 移动端聊天弹窗: 适配屏幕 */
+  .ant-modal-root .ant-modal {
+    max-width: calc(100vw - 16px);
+    margin: 8px auto;
+  }
+  .ant-modal-root .ant-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .ant-modal-root .ant-modal-content .ant-modal-body {
+    height: 70vh !important;
+  }
+  #chat-container {
+    margin: 0 !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  /* ContentHeader 容器与播放器左对齐 (MobileContent 无 #skip-to-content) */
+  div:has(> div > div > div > div > img[alt='Logo']) {
+    margin-left: 16px !important;
+  }
+  /* 移动端聊天按钮: 红色胶囊 */
+  #mobile-chat-button {
+    background-color: #ff0000 !important;
+    border-color: #ff0000 !important;
+    border-radius: 18px;
+    color: #fff;
+    font-weight: 500;
+  }
+}
+
+/* 15. 内容区与头像对齐播放器 ----------------------------------------------------------- */
+/* 桌面: 内容区 margin 与播放器一致 (24px) */
+@media (min-width: 769px) {
+  div:has(> #skip-to-content) {
+    margin-left: 24px !important;
+    margin-right: 24px !important;
+  }
+}
+/* ContentHeader 内部靠左: 层级 root > logoTitleSection > logo > LogoRoot > container > img */
+div:has(> div > div > div > div > img[alt='Logo']) {
+  padding-left: 0 !important;
+}
+div:has(> div > div > div > img[alt='Logo']) {
+  align-items: flex-start !important;   /* 覆盖移动端居中 */
+}
+div:has(> div > div > img[alt='Logo']) {
+  margin-left: 0 !important;
+  margin-right: 12px !important;
+}
+
+/* 频道头像: 96px 深色圆 + 描边 (Owncast Logo 外层原为 96px 白底圆, 一并改深色) */
+div:has(> div > img[alt='Logo']) {
+  width: 96px !important;
+  height: 96px !important;
+  margin-right: 12px !important;
+  border-width: 2px !important;
+  border-color: #3f3f3f !important;
+  background-color: #272727 !important;
+  flex-shrink: 0;
+}
+img[alt='Logo'] {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* 16. (可选) 隐藏默认元素示例 ---------------------------------------------------------
+   取消注释即可启用, 例如隐藏页脚的 "Powered by Owncast":
+   #owncast-powered-by-text { display: none; }
+   ---------------------------------------------------------------------------------- */
