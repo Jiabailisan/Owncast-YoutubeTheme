@@ -7,6 +7,6 @@
 
 预览：https://live-1.fantasyworld.ltd
 
-若要将聊天窗口添加到OBS，可以使用https://ip:port/embed/chat/readonly搭配obs-chat.css使用
+若要将聊天窗口添加到OBS，可以使用https://ip:port/embed/chat/readonly搭配 obs-chat.css 使用
 
 **注：youtube-live.css是未修改播放器控制栏的版本
