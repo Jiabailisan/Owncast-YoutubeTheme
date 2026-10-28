@@ -1,86 +1,724 @@
-/* 1. 背景全透明: 页面与聊天容器全部透明, 仅保留消息本身 */
-html:has(.readonly-chat),
-body:has(.readonly-chat),
-#__next:has(.readonly-chat),
-#chat-container.readonly-chat,
-#chat-container.readonly-chat #virtuoso {
-  background: transparent !important;
-  background-color: transparent !important;
+/* =============================================================================
+   Owncast OBS Chat Overlay — LAPLACE-style
+   Target: http://192.168.50.13:18000/embed/chat/readonly/
+   Version: 1.5 (2026-10-28)
+
+   用法:
+   - 把本文件内容粘贴到 OBS「浏览器源」的「自定义 CSS」中;
+   - 浏览器源 URL 使用上面的 readonly 聊天页;
+
+   OBS 尺寸注意:
+   - 浏览器源的宽/高是页面内部渲染分辨率, 不是画布上的显示大小;
+   - 画布上的大小由场景项 Transform 的 W/H/Scale 决定;
+   - 想让聊天占更大区域: 把源宽高改成目标像素(如 900x1080 / 1920x1080),
+     再 Reset Transform 或用 Fit to screen, 不要只放大一个 300x500 的源;
+   - 300x500 的源在 1920x1080 画布里本来就只有 300x500 像素;
+   - 字号会随源宽度缩放, 默认 1 倍:
+     300 -> 20px, 500 -> 30px, 700 -> 34px, 900+ -> 34px.
+     想再调大/小就改 --obs-chat-font-scale (默认 1, 1.2/1.3 稍大, 2 会很大).
+
+   保留:
+   - CHAT          用户消息
+   - USER_JOINED   用户加入
+   - USER_PARTED   用户离开
+   - NAME_CHANGE   用户改名
+   - SYSTEM        服务器公告/欢迎语
+   - CHAT_ACTION   开关播提示 (也包含少量后台/插件 action, CSS 无法按文本区分)
+   - 管理员/认证徽章 (机器人徽章仍隐藏, 见下方规则)
+
+   剔除:
+   - FEDIVERSE_*   follow / like / repost
+   - “你已成为管理员”提示
+   - 输入框、滚动按钮、页头页脚、主题切换按钮、自己消息底色
+
+   布局:
+   - 透明背景, 聊天列左下角, 最新消息在最下方;
+   - 字号/边距/颜色都可以改下面的 :root 变量.
+   ============================================================================= */
+
+:root {
+  /* ---- 尺寸 ---- */
+  --obs-chat-max-width: min(860px, 100%);
+  --obs-chat-font-scale: 1;
+  --obs-chat-font-size: calc(clamp(20px, 6vw, 34px) * var(--obs-chat-font-scale));
+  --obs-chat-event-size: max(13px, calc(var(--obs-chat-font-size) * 0.6));
+  --obs-chat-action-size: max(16px, calc(var(--obs-chat-font-size) * 0.72));
+  --obs-chat-line-height: 1.38;
+  --obs-chat-gap: clamp(7px, 0.8vh, 12px);
+  --obs-chat-pad-x: clamp(20px, 3.5vw, 64px);
+  --obs-chat-pad-bottom: clamp(24px, 5vh, 56px);
+
+  /* ---- 颜色 ---- */
+  --obs-chat-text: #ffffff;
+  --obs-chat-muted: rgba(255, 255, 255, 0.64);
+  --obs-chat-border: rgba(255, 255, 255, 0.14);
+  --obs-chat-panel: rgba(10, 12, 16, 0.58);
+  --obs-chat-accent: #ff4d4f;
+  --obs-chat-link: #8be9fd;
+  --obs-chat-event-accent: #7dd3fc;
+  --obs-chat-name-accent: #c4b5fd;
+
+  /* ---- 字体/描边 ---- */
+  --obs-chat-font: "Noto Sans SC", "Source Han Sans SC", "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --obs-chat-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95),
+    0 2px 8px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.85);
+  --obs-chat-name-glow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
-/* 2. 页面占满视口, 禁止 body 滚动 (聊天内部自行滚动) */
-html:has(.readonly-chat),
-body:has(.readonly-chat) {
+/* -----------------------------------------------------------------------------
+   1. 页面透明化和铺满
+   -------------------------------------------------------------------------- */
+html,
+body,
+#__next,
+#__next > div,
+#__next > div > div,
+#__next > div > div > div {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html,
+body,
+#__next {
+  width: 100% !important;
   height: 100% !important;
   overflow: hidden !important;
 }
-#chat-container.readonly-chat {
+
+body {
+  color: var(--obs-chat-text) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-font-size) !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 页面上的所有非聊天 UI */
+.global-header,
+.global-footer,
+#header-logo,
+#user-menu,
+.ant-layout-header,
+.ant-layout-footer,
+.yt-theme-toggle,
+.yt-theme-toggle--floating,
+#owncast-chat-offline-text {
+  display: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   2. 聊天外壳: 全屏透明, 左下角留安全边距
+   -------------------------------------------------------------------------- */
+#chat-container {
+  position: fixed !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100vw !important;
+  min-width: 0 !important;
+  max-width: none !important;
   height: 100vh !important;
-  max-height: 100vh !important;
   margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
   border-radius: 0 !important;
-  border: none !important;
   box-shadow: none !important;
   overflow: hidden !important;
-}
-#chat-container.readonly-chat #virtuoso {
-  height: 100% !important;
-  overflow-y: auto !important;
+  color: var(--obs-chat-text) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-font-size) !important;
+  --chat-message-text-size: var(--obs-chat-font-size) !important;
+  pointer-events: none !important;
 }
 
-/* 3. 隐藏顶部伪元素栏 ("Live chat" 头部 + 齿轮, 来自主站主题 #chat-container::before/::after) */
-#chat-container.readonly-chat::before,
-#chat-container.readonly-chat::after {
-  display: none !important;
+#chat-container::before {
   content: none !important;
+  display: none !important;
 }
 
-/* 4. 隐藏所有滚动条 (OBS 里不应看到滚动条) */
-#chat-container.readonly-chat,
-#chat-container.readonly-chat * {
+#chat-container #virtuoso {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100vh !important;
+  padding: 0 var(--obs-chat-pad-x) var(--obs-chat-pad-bottom) !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
 }
-#chat-container.readonly-chat ::-webkit-scrollbar {
+
+#chat-container #virtuoso::-webkit-scrollbar,
+#chat-container #virtuoso::-webkit-scrollbar-thumb {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
-/* 5. 单条消息: 半透明深底 + 圆角 + 左侧用户色粗边 */
-#chat-container.readonly-chat .chat-message_user {
-  margin: 3px 12px !important;   /* 左右留白, 避免消息贴边 */
+/* 输入框/滚动按钮/拖拽条/主题按钮等不属于弹幕 */
+#scroll-to-chat-bottom,
+[class*="toBottomWrap"],
+#chat-input,
+#chat-container [class*="chatTextField"],
+#chat-container [class*="resizeHandle"],
+#chat-container [class*="ChatModerationActionMenu"],
+#chat-container [class*="modMenuWrapper"] {
+  display: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   3. 显示: 用户消息 / 加入 / 离开 / 改名 / 系统 / 开关播 / 徽章
+   -------------------------------------------------------------------------- */
+
+/* 联邦 follow/like/repost 仍然剔除 */
+#chat-container .chat-message_social,
+#chat-container [class*="ChatSocialMessage"] {
+  display: none !important;
+}
+
+/* “你已成为管理员”等提示仍然剔除 */
+#chat-container [class*="ChatModeratorNotification"],
+#chat-container [class*="ChatModerationNotification"] {
+  display: none !important;
+}
+
+/* 自己的消息底色仍去掉; 徽章保留 */
+#chat-container .chat-message_user [class*="__background"] {
+  display: none !important;
+}
+
+/* 用户名前的 @ 前缀去掉; 徽章保留 */
+#chat-container .chat-message_user [class*="__userName"]::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   4. 用户消息: 无气泡, 彩色用户名 + 白色正文
+   -------------------------------------------------------------------------- */
+#chat-container .chat-message_user {
+  display: block !important;
+  width: 100% !important;
+  max-width: var(--obs-chat-max-width) !important;
+  margin: 0 0 var(--obs-chat-gap) !important;
   padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--obs-chat-text) !important;
+  font-size: var(--obs-chat-font-size) !important;
+  line-height: var(--obs-chat-line-height) !important;
+  text-align: left !important;
+  animation: obs-chat-in 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) both;
 }
-#chat-container.readonly-chat [class*="ChatUserMessage_root"] {
-  display: flex !important;
+
+#chat-container .chat-message_user:hover {
+  background: transparent !important;
+}
+
+#chat-container .chat-message_user > div {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  font-size: var(--obs-chat-font-size) !important;
+}
+
+#chat-container .chat-message_user [class$="__user"],
+#chat-container .chat-message_user [class*="__repeatUser"] {
+  display: inline-flex !important;
   align-items: baseline !important;
-  gap: 8px !important;
-  padding: 5px 10px !important;
-  border-radius: 8px !important;
-  border-left-width: 3px !important;   /* 保留 Owncast 的 border-color(用户色) */
-  border-left-style: solid !important;
-  border-right-width: 0 !important;
-  background: rgba(0, 0, 0, 0.4) !important;
+  flex-wrap: nowrap !important;
+  gap: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  vertical-align: baseline !important;
+  font-weight: 800 !important;
+  line-height: inherit !important;
+  filter: none !important;
+  text-shadow: var(--obs-chat-text-shadow), var(--obs-chat-name-glow) !important;
 }
 
-/* 6. 用户名: 保持用户彩色 + 加粗 + 投影 */
-#chat-container.readonly-chat [class*="ChatUserMessage_user"] {
-  font-weight: 700 !important;
-  font-size: 14px !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+#chat-container .chat-message_user [class*="userName"] {
+  display: inline-block !important;
+  max-width: min(100%, 560px) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  font-size: 0.8em !important;
+  font-weight: 800 !important;
+  filter: none !important;
+  color: inherit !important;
+  text-shadow: inherit !important;
 }
 
-/* 7. 消息内容: 白色 + 投影, 直播叠加清晰可读 */
-#chat-container.readonly-chat [class*="ChatUserMessage_message"] {
-  color: #ffffff !important;
-  font-size: 15px !important;
-  line-height: 1.5 !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
-  word-break: break-word !important;
+#chat-container .chat-message_user [class$="__user"]::after,
+#chat-container .chat-message_user [class*="__repeatUser"]::after {
+  content: ":" !important;
+  display: inline-block !important;
+  margin: 0 0.38em 0 0.1em !important;
+  color: rgba(255, 255, 255, 0.56) !important;
+  font-weight: 600 !important;
+  filter: none !important;
+  text-shadow: var(--obs-chat-text-shadow) !important;
 }
-#chat-container.readonly-chat [class*="ChatUserMessage_message"] p {
+
+#chat-container .chat-message_user [class*="__message"] {
+  display: inline !important;
+  color: var(--obs-chat-text) !important;
+  font-size: inherit !important;
+  font-weight: 600 !important;
+  line-height: inherit !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  text-shadow: var(--obs-chat-text-shadow) !important;
+  vertical-align: baseline !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] p {
+  display: inline !important;
   margin: 0 !important;
 }
+
+#chat-container .chat-message_user [class*="__message"] a {
+  color: var(--obs-chat-link) !important;
+  text-decoration: underline !important;
+  text-decoration-color: rgba(139, 233, 253, 0.45) !important;
+  text-underline-offset: 3px !important;
+  text-shadow: var(--obs-chat-text-shadow) !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] img {
+  display: inline-block !important;
+  max-width: min(100%, 360px) !important;
+  max-height: 2.6em !important;
+  width: auto !important;
+  height: auto !important;
+  vertical-align: -0.2em !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] mark {
+  padding: 0 0.2em !important;
+  border-radius: 4px !important;
+  background: rgba(255, 214, 10, 0.24) !important;
+  color: inherit !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] code,
+#chat-container .chat-message_user [class*="__message"] pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  background: rgba(0, 0, 0, 0.48) !important;
+  border-radius: 5px !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] code {
+  padding: 0.05em 0.3em !important;
+}
+
+#chat-container .chat-message_user [class*="__message"] pre {
+  display: block !important;
+  margin: 0.25em 0 !important;
+  padding: 0.5em 0.65em !important;
+  overflow-x: auto !important;
+}
+
+/* ---- 4b. 徽章: 管理员 / 认证 / 机器人 ---- */
+#chat-container .chat-message_user [class*="userBadges"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  margin-left: 6px !important;
+  vertical-align: middle !important;
+}
+
+#chat-container .chat-message_user [class*="userBadges"] > * {
+  margin-left: 0 !important;
+}
+
+#chat-container .chat-message_user [class$="__badge"],
+#chat-container [class*="ChatEventMessage"] [class$="__badge"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1.05em !important;
+  height: 1.05em !important;
+  padding: 0.08em !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 4px !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden !important;
+  font-size: 0.6em !important;
+  line-height: 1 !important;
+  vertical-align: -0.08em !important;
+}
+
+#chat-container .chat-message_user [class$="__badge"] .anticon,
+#chat-container [class*="ChatEventMessage"] [class$="__badge"] .anticon {
+  font-size: 1em !important;
+  line-height: 1 !important;
+}
+
+#chat-container [class*="ChatEventMessage"] [class*="moderatorBadge"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-right: 5px !important;
+  vertical-align: middle !important;
+}
+
+/* 只显示管理员/认证; 机器人徽章仍隐藏. 要显示机器人徽章删掉这条. */
+#chat-container .chat-message_user [class$="__badge"][title="Bot"],
+#chat-container [class*="ChatEventMessage"] [class$="__badge"][title="Bot"] {
+  display: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   5. 用户加入: 小胶囊系统提示
+   -------------------------------------------------------------------------- */
+#chat-container [class*="ChatEventMessage"][class*="__root"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  width: fit-content !important;
+  max-width: var(--obs-chat-max-width) !important;
+  box-sizing: border-box !important;
+  align-self: flex-start !important;
+  margin: 0 0 var(--obs-chat-gap) !important;
+  padding: 6px 13px !important;
+  border: 1px solid var(--obs-chat-border) !important;
+  border-radius: 999px !important;
+  background: var(--obs-chat-panel) !important;
+  color: var(--obs-chat-muted) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-event-size) !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(10px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
+  animation: obs-chat-in 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+#chat-container [class*="ChatEventMessage"][class*="__root"]::before {
+  content: "+";
+  display: inline-block !important;
+  margin-right: 7px !important;
+  color: var(--obs-chat-event-accent) !important;
+  font-size: 1.15em !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.45) !important;
+}
+
+#chat-container [class*="ChatEventMessage"] [class*="__icon"] {
+  display: none !important;
+}
+
+/* 用户离开: 和加入同一胶囊, 用 minus + 淡红区分 */
+#chat-container [class*="ChatEventMessage"][class*="__root"]:has(.anticon-usergroup-delete) {
+  border-color: rgba(248, 113, 113, 0.18) !important;
+  background: rgba(24, 12, 14, 0.58) !important;
+}
+
+#chat-container [class*="ChatEventMessage"][class*="__root"]:has(.anticon-usergroup-delete)::before {
+  content: "−";
+  color: #fca5a5 !important;
+  text-shadow: 0 0 10px rgba(248, 113, 113, 0.4) !important;
+}
+
+#chat-container [class*="ChatEventMessage"] [class*="__message"] {
+  color: var(--obs-chat-muted) !important;
+  font-size: inherit !important;
+  font-weight: 500 !important;
+  white-space: normal !important;
+}
+
+#chat-container [class*="ChatEventMessage"] [class*="__user"] {
+  color: inherit;
+  font-weight: 700 !important;
+  margin-right: 4px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   6. 系统消息: 服务器公告/欢迎语
+   -------------------------------------------------------------------------- */
+#chat-container [class*="ChatSystemMessage"][class*="__chatSystemMessagePadding"] {
+  display: block !important;
+  max-width: var(--obs-chat-max-width) !important;
+  margin: 0 0 var(--obs-chat-gap) !important;
+  padding: 0 !important;
+  animation: obs-chat-in 0.28s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+#chat-container .chat-message_system,
+#chat-container [class*="ChatSystemMessage"][class*="__chatSystemMessage"] {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 11px 16px !important;
+  border: 1px solid rgba(167, 139, 250, 0.24) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(135deg, rgba(76, 29, 149, 0.28), transparent 60%),
+    rgba(12, 10, 20, 0.62) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25) !important;
+  color: var(--obs-chat-text) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-event-size) !important;
+  line-height: 1.5 !important;
+  text-align: left !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__user"] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin: 0 0 3px !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: calc(var(--obs-chat-event-size) * 0.9) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__user"]::before {
+  content: "";
+  display: inline-block !important;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.7);
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__userName"] {
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-weight: 700 !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] {
+  color: #ffffff !important;
+  font-size: calc(var(--obs-chat-event-size) * 1.05) !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-shadow: var(--obs-chat-text-shadow) !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] p {
+  margin: 0 !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] p + p {
+  margin-top: 0.4em !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] a {
+  color: var(--obs-chat-link) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-shadow: var(--obs-chat-text-shadow) !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] img {
+  max-width: min(100%, 360px) !important;
+  max-height: 2.6em !important;
+  width: auto !important;
+  height: auto !important;
+  vertical-align: -0.2em !important;
+}
+
+#chat-container [class*="ChatSystemMessage"] [class*="__message"] mark {
+  padding: 0 0.2em !important;
+  border-radius: 4px !important;
+  background: rgba(167, 139, 250, 0.25) !important;
+  color: inherit !important;
+}
+
+/* -----------------------------------------------------------------------------
+   7. 用户改名: 小胶囊系统提示
+   -------------------------------------------------------------------------- */
+#chat-container [class*="ChatNameChangeMessage"][class*="__nameChangeView"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  width: fit-content !important;
+  max-width: var(--obs-chat-max-width) !important;
+  box-sizing: border-box !important;
+  align-self: flex-start !important;
+  margin: 0 0 var(--obs-chat-gap) !important;
+  padding: 6px 13px !important;
+  border: 1px solid rgba(196, 181, 253, 0.22) !important;
+  border-radius: 999px !important;
+  background: rgba(18, 14, 28, 0.6) !important;
+  color: var(--obs-chat-muted) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-event-size) !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(10px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
+  animation: obs-chat-in 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+#chat-container [class*="ChatNameChangeMessage"][class*="__nameChangeView"]::before {
+  content: "✎";
+  display: inline-block !important;
+  margin-right: 7px !important;
+  color: var(--obs-chat-name-accent) !important;
+  font-size: 1.05em !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-shadow: 0 0 10px rgba(196, 181, 253, 0.4) !important;
+}
+
+#chat-container [class*="ChatNameChangeMessage"] [class*="__icon"] {
+  display: none !important;
+}
+
+#chat-container [class*="ChatNameChangeMessage"] [class*="__nameChangeText"] {
+  color: var(--obs-chat-muted) !important;
+  font-weight: 500 !important;
+  white-space: normal !important;
+}
+
+#chat-container [class*="ChatNameChangeMessage"] [class*="__plain"] {
+  color: var(--obs-chat-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* -----------------------------------------------------------------------------
+   8. 开关播提示: 玻璃横幅 + 呼吸红点
+   -------------------------------------------------------------------------- */
+#chat-container [class*="ChatActionMessage"][class*="__chatActionPadding"],
+#chat-container [class*="chatActionPadding"] {
+  display: block !important;
+  max-width: var(--obs-chat-max-width) !important;
+  margin: 8px 0 14px !important;
+  padding: 0 !important;
+}
+
+#chat-container #owncast-chat-action-message-text {
+  position: relative !important;
+  display: block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 20px 12px 45px !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(196, 181, 253, 0.26) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(124, 58, 237, 0.28), transparent 48%),
+    linear-gradient(135deg, rgba(12, 14, 20, 0.9), rgba(8, 10, 15, 0.82)) !important;
+  box-shadow:
+    0 12px 38px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  color: var(--obs-chat-text) !important;
+  font-family: var(--obs-chat-font) !important;
+  font-size: var(--obs-chat-action-size) !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(12px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.2) !important;
+  animation: obs-chat-in 0.3s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+#chat-container #owncast-chat-action-message-text::before {
+  content: "";
+  position: absolute !important;
+  top: 50% !important;
+  left: 20px !important;
+  width: 9px !important;
+  height: 9px !important;
+  margin-top: -4.5px !important;
+  border-radius: 50% !important;
+  background: var(--obs-chat-accent) !important;
+  box-shadow:
+    0 0 0 4px rgba(255, 77, 79, 0.12),
+    0 0 16px rgba(255, 77, 79, 0.8) !important;
+  animation: obs-chat-pulse 1.8s ease-in-out infinite !important;
+}
+
+#chat-container #owncast-chat-action-message-text p {
+  margin: 0 !important;
+}
+
+#chat-container #owncast-chat-action-message-text strong {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+#chat-container #owncast-chat-action-message-text a {
+  color: var(--obs-chat-link) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   9. 动画
+   -------------------------------------------------------------------------- */
+@keyframes obs-chat-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes obs-chat-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    box-shadow:
+      0 0 0 4px rgba(255, 77, 79, 0.1),
+      0 0 10px rgba(255, 77, 79, 0.55);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 5px rgba(255, 77, 79, 0.16),
+      0 0 20px rgba(255, 77, 79, 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chat-container .chat-message_user,
+  #chat-container [class*="ChatEventMessage"][class*="__root"],
+  #chat-container [class*="ChatSystemMessage"][class*="__chatSystemMessagePadding"],
+  #chat-container [class*="ChatNameChangeMessage"][class*="__nameChangeView"],
+  #chat-container #owncast-chat-action-message-text,
+  #chat-container #owncast-chat-action-message-text::before {
+    animation: none !important;
+  }
+}
+
+/* 小屏不再单独锁死字号; 上面的 6vw 会让 300/500/700 分别得到 20/30/34. */
