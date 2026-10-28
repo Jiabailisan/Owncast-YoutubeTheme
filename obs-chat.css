@@ -1,6 +1,6 @@
 /* =============================================================================
    Owncast OBS Chat Overlay — LAPLACE-style
-   Version: 1.5 (2026-10-28)
+   Version: 1.6 (2026-10-28)
 
    用法:
    - 把本文件内容粘贴到 OBS「浏览器源」的「自定义 CSS」中;
@@ -151,8 +151,9 @@ body {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
   overscroll-behavior: contain;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
+  /* 不要顶部渐隐: 会让最上面一行看起来被切掉 */
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 #chat-container #virtuoso::-webkit-scrollbar,
@@ -236,6 +237,7 @@ body {
   overflow: visible !important;
   white-space: normal !important;
   font-size: var(--obs-chat-font-size) !important;
+  line-height: 1.48 !important;
 }
 
 #chat-container .chat-message_user [class$="__user"],
@@ -255,10 +257,11 @@ body {
 
 #chat-container .chat-message_user [class*="userName"] {
   display: inline-block !important;
-  max-width: min(100%, 560px) !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
   font-size: 0.8em !important;
   font-weight: 800 !important;
   filter: none !important;
@@ -278,15 +281,17 @@ body {
 }
 
 #chat-container .chat-message_user [class*="__message"] {
-  display: inline !important;
+  display: block !important;
+  width: 100% !important;
   color: var(--obs-chat-text) !important;
   font-size: inherit !important;
   font-weight: 600 !important;
-  line-height: inherit !important;
+  line-height: 1.48 !important;
+  overflow: visible !important;
   overflow-wrap: anywhere !important;
-  word-break: break-word !important;
+  word-break: normal !important;
+  padding-bottom: 0.08em !important;
   text-shadow: var(--obs-chat-text-shadow) !important;
-  vertical-align: baseline !important;
 }
 
 #chat-container .chat-message_user [class*="__message"] p {
