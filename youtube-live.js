@@ -3,12 +3,17 @@
  * Owncast 主题 youtube-live.css 的配套脚本
  *
  * 作用:
- *   emoji-mart 的 em-emoji-picker 在 Shadow DOM 内, 页面 CSS 无法命中.
- *   本脚本在 picker 的 shadowRoot 出现后注入样式, 修正:
- *     1. .scroll 的滚动条占位与右侧 padding
- *     2. #preview 预览区: emoji 缩小居中, 文字右移且不压到 emoji
- *     3. 网格 cell (button.flex) 里 emoji 的 line-height 偏移
- *     4. 自定义 emoji 的 <img> 尺寸
+ *   1. emoji-mart 的 em-emoji-picker 在 Shadow DOM 内, 页面 CSS 无法命中.
+ *      本脚本在 picker 的 shadowRoot 出现后注入样式, 修正:
+ *        - .scroll 的滚动条占位与右侧 padding
+ *        - #preview 预览区: emoji 缩小居中, 文字右移且不压到 emoji
+ *        - 网格 cell (button.flex) 里 emoji 的 line-height 偏移
+ *        - 自定义 emoji 的 <img> 尺寸
+ *   2. 顶栏用户菜单左侧注入 Auto / Dark / Light 主题切换按钮.
+ *        - Auto: 移除 <html data-theme>, 跟随系统 prefers-color-scheme.
+ *        - Dark / Light: 写入 <html data-theme="dark|light">.
+ *        - 选择保存在 localStorage (yt-theme-mode), 刷新后保持.
+ *        - 没有 .global-header 时回退到左下角浮动按钮.
  *
  * 目录:
  *   01 Shadow DOM 样式表
@@ -16,10 +21,11 @@
  *   03 等待 shadowRoot 的重试
  *   04 监听新增 picker
  *   05 启动
+ *   06 主题切换
  *
- * 顶栏、用户菜单、聊天栏由 CSS 负责; 本脚本只处理 emoji picker.
+ * 顶栏、用户菜单、聊天栏由 CSS 负责; 本脚本处理 emoji picker 和主题切换.
  *
- * 版本: 5.1 (2026-10)
+ * 版本: 5.3 (2026-10)
  */
 (() => {
   if (window.__ytEmojiFixInstalled) {
@@ -173,3 +179,182 @@
     );
   }
 })();
+
+/* 06. 主题切换 --------------------------------------------------------------- */
+(() => {
+  if (window.__ytThemeToggleInstalled) {
+    return;
+  }
+  window.__ytThemeToggleInstalled = true;
+
+  const STORAGE_KEY = 'yt-theme-mode';
+  const MODES = ['auto', 'dark', 'light'];
+  const LABELS = { auto: 'Auto', dark: 'Dark', light: 'Light' };
+  const ICONS = {
+    auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.3A8.7 8.7 0 0 1 8.7 3.6a9 9 0 1 0 11.7 11.7z" fill="currentColor"/></svg>',
+    light:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></g></svg>',
+  };
+
+  const readSavedMode = () => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      return MODES.includes(saved) ? saved : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const saveMode = (mode) => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, mode);
+    } catch (e) {
+      /* localStorage 不可用时只在当前页面生效 */
+    }
+  };
+
+  const applyMode = (mode) => {
+    const root = document.documentElement;
+
+    if (mode === 'auto') {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', mode);
+    }
+  };
+
+  const init = () => {
+    /* 只有带第 21 节按钮样式的主题 CSS (v5.2+) 才创建按钮 */
+    const themeReady = getComputedStyle(document.documentElement)
+      .getPropertyValue('--yt-theme-toggle-ready')
+      .trim();
+
+    if (themeReady !== '1' || document.getElementById('yt-theme-toggle')) {
+      return;
+    }
+
+    const saved = readSavedMode();
+    const attr = document.documentElement.getAttribute('data-theme');
+    const initial = saved || (attr === 'dark' || attr === 'light' ? attr : 'auto');
+
+    let mode = initial;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'yt-theme-toggle';
+    button.className = 'yt-theme-toggle';
+
+    const icon = document.createElement('span');
+    icon.className = 'yt-theme-toggle__icon';
+
+    const label = document.createElement('span');
+    label.className = 'yt-theme-toggle__label';
+
+    button.appendChild(icon);
+    button.appendChild(label);
+
+    const render = () => {
+      icon.innerHTML = ICONS[mode];
+      label.textContent = LABELS[mode];
+
+      const next = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+      const text = `Theme: ${LABELS[mode]}. Click for ${LABELS[next]}.`;
+      button.setAttribute('aria-label', text);
+      button.title = text;
+    };
+
+    const setMode = (nextMode, persist) => {
+      mode = MODES.includes(nextMode) ? nextMode : 'auto';
+      applyMode(mode);
+
+      if (persist) {
+        saveMode(mode);
+      }
+
+      render();
+    };
+
+    button.addEventListener('click', () => {
+      const next = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+      setMode(next, true);
+    });
+
+    /* 先把已保存的模式应用到 <html>, 再插入按钮 */
+    setMode(initial, false);
+
+    const header = document.querySelector('.global-header');
+
+    if (!header) {
+      /* 兜底: 没有顶栏的页面仍用左下角浮动按钮 */
+      button.classList.add('yt-theme-toggle--floating');
+      document.body.appendChild(button);
+      return;
+    }
+
+    const directChildOfHeader = (el) => {
+      let item = el;
+
+      while (item && item.parentElement && item.parentElement !== header) {
+        item = item.parentElement;
+      }
+
+      return item && item.parentElement === header ? item : null;
+    };
+
+    const getRightItem = () => {
+      const offline = header.querySelector('#owncast-chat-offline-text');
+      if (offline) {
+        const item = directChildOfHeader(offline);
+        if (item && item !== button) {
+          return item;
+        }
+      }
+
+      const menu = header.querySelector('#user-menu');
+      if (menu) {
+        const item = directChildOfHeader(menu);
+        if (item && item !== button) {
+          return item;
+        }
+      }
+
+      return null;
+    };
+
+    const place = () => {
+      const rightItem = getRightItem();
+
+      if (rightItem) {
+        if (button.parentElement !== header || button.nextElementSibling !== rightItem) {
+          header.insertBefore(button, rightItem);
+        }
+      } else if (button.parentElement !== header) {
+        header.appendChild(button);
+      }
+
+      /* 和用户信息按钮保持同高 */
+      const menu = header.querySelector('#user-menu');
+      if (menu) {
+        const height = Math.round(menu.getBoundingClientRect().height);
+        if (height > 0) {
+          button.style.height = `${height}px`;
+        }
+      }
+    };
+
+    place();
+
+    /* React 重新渲染 Header 时把按钮补回去, 并跟随用户菜单/离线文字移动 */
+    const headerObserver = new MutationObserver(() => place());
+    headerObserver.observe(header, { childList: true });
+    window.addEventListener('resize', place);
+  };
+
+  if (document.body) {
+    init();
+  } else {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  }
+})();
+
