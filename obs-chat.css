@@ -1,6 +1,6 @@
 /* =============================================================================
    Owncast OBS Chat Overlay — LAPLACE-style
-   Version: 1.7 (2026-10-28)
+   Version: 1.8 (2026-10-28)
 
    用法:
    - 把本文件内容粘贴到 OBS「浏览器源」的「自定义 CSS」中;
@@ -46,6 +46,8 @@
   --obs-chat-gap: clamp(7px, 0.8vh, 12px);
   --obs-chat-pad-x: clamp(20px, 3.5vw, 64px);
   --obs-chat-pad-bottom: clamp(24px, 5vh, 56px);
+  /* 右侧安全区: 浏览器会把它算作不可用宽度, 从而提前换行, 不会切到行末字 */
+  --obs-chat-right-guard: 0.35em;
 
   /* ---- 颜色 ---- */
   --obs-chat-text: #ffffff;
@@ -291,8 +293,8 @@ body {
   overflow-wrap: anywhere !important;
   word-break: normal !important;
   box-sizing: border-box !important;
-  /* 右侧留 0.2em: 避免 1px 亚像素溢出把行末字符裁掉 */
-  padding-right: 0.2em !important;
+  /* 右侧安全区: 让浏览器在碰到边缘前提前换行 */
+  padding-right: var(--obs-chat-right-guard) !important;
   padding-bottom: 0.08em !important;
   text-shadow: var(--obs-chat-text-shadow) !important;
 }
