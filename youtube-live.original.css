@@ -2,7 +2,7 @@
  * YouTube Live Theme for Owncast v0.3.0 Original
  * --------------------------------------------------------------------------
  * 作者: KobayashiKotori
- * 版本: v5.7 (2026-10)
+ * 版本: v5.8 (2026-10)
  * 许可: MIT License
  *
  * 注意:
@@ -164,6 +164,7 @@
   --font-owncast-display: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   --header-height: 56px;
   --yt-chat-width: clamp(360px, 15.5vw, 420px);
+  --yt-chat-input-max-height: 168px;
   --yt-main-max: clamp(1712px, 86vw, 2600px);
 }
 
@@ -942,7 +943,10 @@ img[alt='Logo'] {
   color: var(--yt-text) !important;
   padding: 8px 14px !important;
   font-size: 14px !important;
+  line-height: 1.5;
   min-height: 36px;
+  height: auto !important;
+  max-height: var(--yt-chat-input-max-height) !important;
   caret-color: var(--yt-text);
   overflow-x: auto;
   overflow-y: auto;
