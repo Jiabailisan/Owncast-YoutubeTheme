@@ -14,6 +14,7 @@
  *        - Dark / Light: 写入 <html data-theme="dark|light">.
  *        - 选择保存在 localStorage (yt-theme-mode), 刷新后保持.
  *        - 没有 .global-header 时回退到左下角浮动按钮.
+ *   3. 清理粘贴进聊天输入框的内容首尾多余换行/空白.
  *
  * 目录:
  *   01 Shadow DOM 样式表
@@ -22,10 +23,11 @@
  *   04 监听新增 picker
  *   05 启动
  *   06 主题切换
+ *   07 聊天输入框粘贴清理
  *
- * 顶栏、用户菜单、聊天栏由 CSS 负责; 本脚本处理 emoji picker 和主题切换.
+ * 顶栏、用户菜单、聊天栏由 CSS 负责; 本脚本处理 emoji picker、主题切换和粘贴清理.
  *
- * 版本: 5.3 (2026-10)
+ * 版本: 5.4 (2026-10)
  */
 (() => {
   if (window.__ytEmojiFixInstalled) {
@@ -356,5 +358,99 @@
   } else {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   }
+})();
+
+/* 07. 聊天输入框粘贴清理 ------------------------------------------------------- */
+(() => {
+  if (window.__ytChatPasteCleanInstalled) {
+    return;
+  }
+  window.__ytChatPasteCleanInstalled = true;
+
+  const isBlankNode = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return !node.nodeValue.replace(/\u200B/g, '').trim();
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return false;
+    }
+    if (node.tagName === 'BR') {
+      return true;
+    }
+    if (node.tagName === 'IMG') {
+      return false;
+    }
+    return !node.textContent.replace(/\u200B/g, '').trim() && !node.querySelector('img');
+  };
+
+  const trimEdgeText = (node, side) => {
+    if (!node) {
+      return;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      const value = node.nodeValue;
+      const next = side === 'start' ? value.replace(/^\s+/, '') : value.replace(/\s+$/, '');
+      if (next !== value) {
+        node.nodeValue = next;
+      }
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let target = null;
+    if (side === 'start') {
+      target = walker.nextNode();
+    } else {
+      let current;
+      while ((current = walker.nextNode())) {
+        target = current;
+      }
+    }
+    if (target && target.nodeValue) {
+      const value = target.nodeValue;
+      const next = side === 'start' ? value.replace(/^\s+/, '') : value.replace(/\s+$/, '');
+      if (next !== value) {
+        target.nodeValue = next;
+      }
+    }
+  };
+
+  const clean = (el) => {
+    while (el.firstChild && isBlankNode(el.firstChild)) {
+      el.removeChild(el.firstChild);
+    }
+    while (el.lastChild && isBlankNode(el.lastChild)) {
+      el.removeChild(el.lastChild);
+    }
+    trimEdgeText(el.firstChild, 'start');
+    trimEdgeText(el.lastChild, 'end');
+    while (el.firstChild && isBlankNode(el.firstChild)) {
+      el.removeChild(el.firstChild);
+    }
+    while (el.lastChild && isBlankNode(el.lastChild)) {
+      el.removeChild(el.lastChild);
+    }
+  };
+
+  /* Owncast 自己的 onPaste 会 sanitize 后 insertHTML; 等它插入完再清理. */
+  document.addEventListener(
+    'paste',
+    (event) => {
+      const target = event.target;
+      const el = target instanceof Element ? target.closest('#chat-input-content-editable') : null;
+      if (!el) {
+        return;
+      }
+      window.setTimeout(() => {
+        clean(el);
+        /* 让 React 的 onContentChange / draft 同步清理后的内容 */
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, 0);
+    },
+    true,
+  );
 })();
 
