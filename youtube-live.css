@@ -2,7 +2,7 @@
  * YouTube Live Theme for Owncast v0.3.0 Modified
  * --------------------------------------------------------------------------
  * 作者: KobayashiKotori
- * 版本: v5.8 (2026-10)
+ * 版本: v5.11 (2026-10)
  * 许可: MIT License
  *
  * 注意:
@@ -898,6 +898,23 @@ img[alt='Logo'] {
   color: var(--yt-link-hover);
 }
 
+/* 管理员/版主的消息操作 "..." 按钮: 源码写死白底, 夜间是一块刺眼的白斑 */
+#chat-container .chat-message_user [class*="modMenuWrapper"] button {
+  background-color: var(--yt-control-bg) !important;
+  border: 1px solid var(--yt-border) !important;
+  border-radius: 8px !important;
+  color: var(--yt-text) !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+#chat-container .chat-message_user [class*="modMenuWrapper"] button:hover,
+#chat-container .chat-message_user [class*="modMenuWrapper"] button:focus-visible {
+  background-color: var(--yt-hover-bg) !important;
+  border-color: var(--yt-border-strong) !important;
+  color: var(--yt-text) !important;
+}
+
 /* 输入区 */
 #chat-container div:has(> #chat-input) {
   border-top: none !important;
@@ -1127,6 +1144,13 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 .ant-modal-body {
   background-color: var(--yt-panel-bg) !important;
   border-radius: 0 0 12px 12px !important;
+  color: var(--yt-text) !important;
+}
+
+/* 用户详情弹窗上半部分的 Row/Col 是 antd 默认黑字, 不继承 modal 的 color.
+   用 :has(.ant-collapse) 仅限定在这个弹窗, 避免影响浏览器通知的白底预览. */
+.ant-modal-container .ant-modal-body:has(.ant-collapse) .ant-row,
+.ant-modal-container .ant-modal-body:has(.ant-collapse) .ant-col {
   color: var(--yt-text) !important;
 }
 
@@ -1408,6 +1432,125 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 
 .ant-spin .ant-spin-dot-item {
   background-color: #ff0000;
+}
+
+/* 15b. 用户详情弹窗（ChatModerationDetailsModal）的 Collapse / Table --------------- */
+/* 这些区域来自 antd 默认浅色, 主题之前只覆盖了 Modal 外壳, 夜间会露出白色面板. */
+.ant-modal-container .ant-collapse {
+  /* antd v6 的 Collapse 内容背景是 token, 且 DOM 用 .ant-collapse-panel/.ant-collapse-body */
+  --ant-collapse-content-bg: var(--yt-panel-bg);
+  --ant-collapse-header-bg: var(--yt-control-bg);
+  background-color: var(--yt-panel-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-collapse > .ant-collapse-item {
+  border-color: var(--yt-border) !important;
+}
+
+.ant-modal-container .ant-collapse .ant-collapse-header {
+  background-color: var(--yt-control-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-collapse .ant-collapse-header-text,
+.ant-modal-container .ant-collapse .ant-collapse-title {
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-collapse .ant-collapse-expand-icon,
+.ant-modal-container .ant-collapse .ant-collapse-arrow {
+  color: var(--yt-text-secondary) !important;
+}
+
+.ant-modal-container .ant-collapse .ant-collapse-content {
+  background-color: var(--yt-panel-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-collapse .ant-collapse-content-box {
+  background-color: var(--yt-panel-bg) !important;
+  color: var(--yt-text) !important;
+}
+
+/* antd v6 实际内容面板是 panel/body, 不是 v5 的 content/content-box */
+.ant-modal-container .ant-collapse .ant-collapse-panel,
+.ant-modal-container .ant-collapse .ant-collapse-body {
+  background-color: var(--yt-panel-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-table-wrapper,
+.ant-modal-container .ant-table-wrapper .ant-table {
+  background-color: transparent !important;
+}
+
+.ant-modal-container .ant-table,
+.ant-modal-container .ant-table-container,
+.ant-modal-container .ant-table-content,
+.ant-modal-container .ant-table-cell,
+.ant-modal-container .ant-table-tbody > tr > td {
+  background-color: var(--yt-panel-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-table-thead > tr > th {
+  background-color: var(--yt-control-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text-secondary) !important;
+}
+
+.ant-modal-container .ant-table-tbody > tr:hover > td,
+.ant-modal-container .ant-table-tbody > tr.ant-table-row:hover > td,
+.ant-modal-container .ant-table-cell-row-hover {
+  background-color: var(--yt-hover-bg) !important;
+}
+
+.ant-modal-container .ant-table-cell::before {
+  background-color: var(--yt-border) !important;
+}
+
+.ant-modal-container .ant-table-tbody > tr.ant-table-placeholder > td {
+  background-color: var(--yt-panel-bg) !important;
+  color: var(--yt-text-muted) !important;
+}
+
+.ant-modal-container .ant-tag {
+  background-color: var(--yt-control-bg) !important;
+  border-color: var(--yt-border-strong) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-pagination-item,
+.ant-modal-container .ant-pagination-prev .ant-pagination-item-link,
+.ant-modal-container .ant-pagination-next .ant-pagination-item-link {
+  background-color: var(--yt-control-bg) !important;
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-pagination-item a,
+.ant-modal-container .ant-pagination-prev .ant-pagination-item-link,
+.ant-modal-container .ant-pagination-next .ant-pagination-item-link {
+  color: var(--yt-text) !important;
+}
+
+.ant-modal-container .ant-pagination-item-active {
+  border-color: var(--yt-link) !important;
+}
+
+.ant-modal-container .ant-pagination-item-active a {
+  color: var(--yt-link) !important;
+}
+
+.ant-modal-container .ant-pagination-disabled .ant-pagination-item-link {
+  border-color: var(--yt-border) !important;
+  color: var(--yt-text-disabled) !important;
 }
 
 /* 16. 表单控件（选择器 / 输入框） ----------------------------------------------------------- */
