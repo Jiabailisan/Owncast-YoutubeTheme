@@ -1,6 +1,6 @@
 /* =============================================================================
    Owncast OBS Chat Overlay — LAPLACE-style
-   Version: 1.9 (2026-10-28)
+   Version: 2.0 (2026-11)
 
    用法:
    - 把本文件内容粘贴到 OBS「浏览器源」的「自定义 CSS」中;
@@ -53,7 +53,7 @@
   --obs-chat-text: #ffffff;
   --obs-chat-muted: rgba(255, 255, 255, 0.64);
   --obs-chat-border: rgba(255, 255, 255, 0.14);
-  --obs-chat-panel: rgba(10, 12, 16, 0.58);
+  --obs-chat-panel: rgba(10, 12, 16, 0.72);
   --obs-chat-accent: #ff4d4f;
   --obs-chat-link: #8be9fd;
   --obs-chat-event-accent: #7dd3fc;
@@ -187,8 +187,7 @@ body {
 }
 
 /* “你已成为管理员”等提示仍然剔除 */
-#chat-container [class*="ChatModeratorNotification"],
-#chat-container [class*="ChatModerationNotification"] {
+#chat-container [class*="ChatModeratorNotification"] {
   display: none !important;
 }
 
@@ -242,6 +241,7 @@ body {
   line-height: 1.48 !important;
 }
 
+#chat-container .chat-message_user [class*="__user "],
 #chat-container .chat-message_user [class$="__user"],
 #chat-container .chat-message_user [class*="__repeatUser"] {
   display: inline-flex !important;
@@ -271,6 +271,7 @@ body {
   text-shadow: inherit !important;
 }
 
+#chat-container .chat-message_user [class*="__user "]::after,
 #chat-container .chat-message_user [class$="__user"]::after,
 #chat-container .chat-message_user [class*="__repeatUser"]::after {
   content: ":" !important;
@@ -359,8 +360,8 @@ body {
   margin-left: 0 !important;
 }
 
-#chat-container .chat-message_user [class$="__badge"],
-#chat-container [class*="ChatEventMessage"] [class$="__badge"] {
+#chat-container .chat-message_user .chat-user-badge,
+#chat-container [class*="ChatEventMessage"] .chat-user-badge {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -378,8 +379,8 @@ body {
   vertical-align: -0.08em !important;
 }
 
-#chat-container .chat-message_user [class$="__badge"] .anticon,
-#chat-container [class*="ChatEventMessage"] [class$="__badge"] .anticon {
+#chat-container .chat-message_user .chat-user-badge .anticon,
+#chat-container [class*="ChatEventMessage"] .chat-user-badge .anticon {
   font-size: 1em !important;
   line-height: 1 !important;
 }
@@ -392,8 +393,8 @@ body {
 }
 
 /* 只显示管理员/认证; 机器人徽章仍隐藏. 要显示机器人徽章删掉这条. */
-#chat-container .chat-message_user [class$="__badge"][title="Bot"],
-#chat-container [class*="ChatEventMessage"] [class$="__badge"][title="Bot"] {
+#chat-container .chat-message_user .chat-user-badge[title="Bot"],
+#chat-container [class*="ChatEventMessage"] .chat-user-badge[title="Bot"] {
   display: none !important;
 }
 
@@ -419,9 +420,7 @@ body {
   line-height: 1.35 !important;
   text-align: left !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18) !important;
-  backdrop-filter: blur(10px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22) !important;
   animation: obs-chat-in 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) both;
 }
 
@@ -442,8 +441,8 @@ body {
 
 /* 用户离开: 和加入同一胶囊, 用 minus + 淡红区分 */
 #chat-container [class*="ChatEventMessage"][class*="__root"]:has(.anticon-usergroup-delete) {
-  border-color: rgba(248, 113, 113, 0.18) !important;
-  background: rgba(24, 12, 14, 0.58) !important;
+  border-color: rgba(248, 113, 113, 0.22) !important;
+  background: rgba(24, 12, 14, 0.72) !important;
 }
 
 #chat-container [class*="ChatEventMessage"][class*="__root"]:has(.anticon-usergroup-delete)::before {
@@ -486,17 +485,15 @@ body {
   border: 1px solid rgba(167, 139, 250, 0.24) !important;
   border-radius: 12px !important;
   background:
-    linear-gradient(135deg, rgba(76, 29, 149, 0.28), transparent 60%),
-    rgba(12, 10, 20, 0.62) !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25) !important;
+    linear-gradient(135deg, rgba(76, 29, 149, 0.34), transparent 60%),
+    rgba(12, 10, 20, 0.76) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28) !important;
   color: var(--obs-chat-text) !important;
   font-family: var(--obs-chat-font) !important;
   font-size: var(--obs-chat-event-size) !important;
   line-height: 1.5 !important;
   text-align: left !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(10px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
 }
 
 #chat-container [class*="ChatSystemMessage"] [class*="__user"] {
@@ -522,7 +519,7 @@ body {
   box-shadow: 0 0 10px rgba(167, 139, 250, 0.7);
 }
 
-#chat-container [class*="ChatSystemMessage"] [class*="__userName"] {
+#chat-container [class*="ChatSystemMessage"] [class*="__user"] > span {
   color: rgba(255, 255, 255, 0.72) !important;
   font-weight: 700 !important;
 }
@@ -578,18 +575,16 @@ body {
   align-self: flex-start !important;
   margin: 0 0 var(--obs-chat-gap) !important;
   padding: 6px 13px !important;
-  border: 1px solid rgba(196, 181, 253, 0.22) !important;
+  border: 1px solid rgba(196, 181, 253, 0.24) !important;
   border-radius: 999px !important;
-  background: rgba(18, 14, 28, 0.6) !important;
+  background: rgba(18, 14, 28, 0.74) !important;
   color: var(--obs-chat-muted) !important;
   font-family: var(--obs-chat-font) !important;
   font-size: var(--obs-chat-event-size) !important;
   line-height: 1.35 !important;
   text-align: left !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18) !important;
-  backdrop-filter: blur(10px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(1.15) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22) !important;
   animation: obs-chat-in 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) both;
 }
 
@@ -653,8 +648,6 @@ body {
   line-height: 1.4 !important;
   text-align: left !important;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(12px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(1.2) !important;
   animation: obs-chat-in 0.3s cubic-bezier(0.2, 0.8, 0.25, 1) both;
 }
 

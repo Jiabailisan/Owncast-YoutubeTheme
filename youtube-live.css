@@ -2,11 +2,12 @@
  * YouTube Live Theme for Owncast v0.3.0 Modified
  * --------------------------------------------------------------------------
  * 作者: KobayashiKotori
- * 版本: v5.11 (2026-10)
+ * 版本: v5.12 (2026-11)
  * 许可: MIT License
  *
  * 注意:
- *   - 无法访问 Google Fonts 时, 删除第 1 节的 @import 即可.
+ *   - 默认使用系统无衬线字体栈 (免外链, 国内网络不阻塞);
+ *     如需 Google Fonts Roboto, 取消第 1 节的 @import 注释即可.
  *   - 想保留自己的站点 Logo, 删除「顶栏 Logo」一段.
  *   - 日间主题跟随系统/浏览器浅色偏好自动启用;
  *     也可用 <html data-theme="light"> / <html data-theme="dark"> 强制.
@@ -40,7 +41,9 @@
    ========================================================================== */
 
 /* 1. 字体 ------------------------------------------------------------------------- */
+/* 如需加载外链 Roboto 字体, 取消下面注释 (国内网络无法直连时请保持注释):
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+*/
 
 /* 2. 主题变量 ----------------------------------------------------------------------- */
 :root {
@@ -90,7 +93,6 @@
   --yt-action-disabled: #5a5a5a;
   --yt-on-dark: #f1f1f1;
   --yt-on-video: #f1f1f1;
-  --yt-player-frame-bg: #000000;
   --yt-social-icon-filter: brightness(0) invert(1);
   --yt-social-icon-opacity: 0.88;
   --yt-username-filter: none;
@@ -392,19 +394,18 @@ body::-webkit-scrollbar,
 }
 
 /* 6. 播放器外壳 ---------------------------------------------------------------------- */
-/* 播放器外层只保留尺寸/间距/圆角; video.js 等 UI 规则已移除.
-   操作按钮的 top 公式假定 #player 仍为 16:9;
-   如果自定义播放器的菜单/浮层需要超出容器, 去掉 overflow: hidden. */
+/* 播放器外层只保留尺寸/间距/圆角; 适配魔改版内置现代控制栏 (WebRTC / HLS).
+   如需给纯原版 Video.js 也套用现代控制栏样式, 请使用 youtube-live.original.css. */
 #player {
   width: 100%;
   height: auto !important;
   max-height: none !important;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-aspect-ratio, 16 / 9);
   margin: 16px 24px 0;
   border-radius: 12px;
   overflow: hidden;
-  /* 外框底色跟随主题: 深色黑, 日间白; 避免浅色底上圆角/1px 边缘露出黑缝 */
-  background-color: var(--yt-player-frame-bg);
+  isolation: isolate;
+  background-color: #000000;
 }
 
 @media (min-width: 769px) {
@@ -413,18 +414,16 @@ body::-webkit-scrollbar,
   }
 }
 
-/* video.js 控件始终显示在黑色视频上, 不跟随日间主题变深 */
-.vjs-owncast.video-js,
-.vjs-owncast .vjs-control-bar,
-.vjs-owncast .vjs-control,
-.vjs-owncast .vjs-menu li,
-.vjs-owncast .vjs-loading-spinner {
-  color: var(--yt-on-video) !important;
-}
-
-/* video.js 外层也铺同一个底色, 避免视频未盖满时在浅色页面上露出黑边 */
-.vjs-owncast.video-js {
-  background-color: var(--yt-player-frame-bg) !important;
+/* 全屏时复位圆角/外边距/宽高比, 避免在非 16:9 屏幕上留黑框或白边 */
+#player:fullscreen,
+#player:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background-color: #000000 !important;
 }
 
 /* /embed/video: 播放器要铺满视口, 不能套用主站的边距和 16:9 盒子 */
@@ -473,18 +472,24 @@ div:has(> .ant-row > #player) {
   position: relative;
 }
 
-/* 开播时: 操作按钮绝对定位到直播介绍右上角 */
+/* 开播时: 操作按钮以零高度行锚定在频道介绍右上角, 自动跟随任意画面比例与状态栏高度 */
 @media (min-width: 769px) {
   div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    position: absolute;
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - var(--yt-chat-width) - 72px) * 9 / 16 + 60px);
-    right: 12px;
+    position: relative;
+    height: 0;
+    overflow: visible;
+    align-items: flex-start;
+    padding-right: 12px;
     z-index: 5;
+    pointer-events: none;
   }
 
-  /* 隐藏聊天后, 播放器占满主列 */
-  body:not(:has(#chat-container)) div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - 48px) * 9 / 16 + 60px);
+  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) [class*="actionButtonsContainer"] {
+    height: auto;
+  }
+
+  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) .ant-btn {
+    pointer-events: auto;
   }
 
   /* 隐藏聊天: 顶栏右侧留白 24px, 与播放器右边缘对齐 */
@@ -605,22 +610,22 @@ div:has(> #skip-to-content) {
   margin: 0 0 10px !important;
 }
 
-/* ContentHeader 内部靠左: root > logoTitleSection > logo > LogoRoot > container > img */
-div:has(> div > div > div > div > img[alt='Logo']) {
+/* ContentHeader 内部靠左: 直接命中模块类名, 避免多层 div:has() 与全局 img[alt='Logo'] 误伤 */
+[class*="ContentHeader-module"][class*="__root"] {
   padding-left: 0 !important;
 }
 
-div:has(> div > div > div > img[alt='Logo']) {
+[class*="ContentHeader-module"][class*="__logoTitleSection"] {
   align-items: flex-start !important;
 }
 
-div:has(> div > div > img[alt='Logo']) {
+[class*="ContentHeader-module"][class*="__logo"]:not([class*="__logoTitleSection"]) {
   margin-left: 0 !important;
   margin-right: 12px !important;
 }
 
 /* 频道头像: 96px 深色圆 + 描边 */
-div:has(> div > img[alt='Logo']) {
+[class*="ContentHeader-module"] [class*="Logo-module"][class*="__root"] {
   width: 96px !important;
   height: 96px !important;
   margin-right: 12px !important;
@@ -630,7 +635,7 @@ div:has(> div > img[alt='Logo']) {
   flex-shrink: 0;
 }
 
-div:has(> div > img[alt='Logo']) > div {
+[class*="ContentHeader-module"] [class*="Logo-module"][class*="__container"] {
   width: 100% !important;
   height: 100% !important;
   display: flex !important;
@@ -640,7 +645,7 @@ div:has(> div > img[alt='Logo']) > div {
   border-radius: 50%;
 }
 
-img[alt='Logo'] {
+[class*="ContentHeader-module"] [class*="Logo-module"] img[alt='Logo'] {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
@@ -854,6 +859,7 @@ img[alt='Logo'] {
   display: none !important;
 }
 
+#chat-container .chat-message_user [class*='__user '],
 #chat-container .chat-message_user [class$='__user'],
 #chat-container .chat-message_user [class*='__repeatUser'] {
   display: flex !important;
@@ -870,7 +876,7 @@ img[alt='Logo'] {
 }
 
 /* 徽章保持深色底, 前景仍是用户色; 日间不会变成浅灰块 */
-#chat-container .chat-message_user [class$="__badge"] {
+#chat-container .chat-message_user .chat-user-badge {
   background-color: #0f0f0f !important;
 }
 
@@ -878,6 +884,7 @@ img[alt='Logo'] {
   content: '@';
 }
 
+#chat-container .chat-message_user [class*='__user ']::after,
 #chat-container .chat-message_user [class$='__user']::after,
 #chat-container .chat-message_user [class*='__repeatUser']::after {
   content: '：';
@@ -1093,6 +1100,7 @@ em-emoji-picker {
 /* /embed/chat/readonly 没有 .embed-container, 聊天栏需要自己铺满 */
 body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container {
   width: 100vw !important;
+  min-width: 0 !important;
   max-width: none !important;
   height: 100vh !important;
   margin: 0 !important;
@@ -1191,8 +1199,8 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   color: var(--yt-text) !important;
 }
 
-/* Form 直系错误 div 没有 CSS Module 类名, 直接给红色 */
-.ant-modal-container .ant-form > div:not(:has(.ant-btn)) {
+/* NameChangeModal 表单校验错误 */
+.ant-modal-container [class*="NameChangeModal"][class*="__error"] {
   color: #ff4b39 !important;
 }
 
@@ -1622,7 +1630,7 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   }
 
   /* ContentHeader 与播放器左对齐 (MobileContent 没有 #skip-to-content) */
-  div:has(> div > div > div > div > img[alt='Logo']) {
+  [class*="ContentHeader-module"][class*="__root"] {
     margin-left: 16px !important;
   }
 
@@ -1683,7 +1691,8 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 @media (min-width: 769px) and (max-aspect-ratio: 1/1) {
   [class*="Content-module"][class*="__main"]:not([class*="mainColumn"]) {
     flex-direction: column !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     height: calc(100vh - var(--header-height)) !important;
   }
 
@@ -1694,10 +1703,13 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
     overflow: visible !important;
   }
 
+  [class*="bottomPageContentContainer"] {
+    min-height: auto;
+  }
+
   #chat-container {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    height: auto !important;
+    flex: 0 0 auto !important;
+    height: clamp(380px, 48vh, 560px) !important;
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -1707,10 +1719,6 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 
   .global-header {
     padding-right: 24px !important;
-  }
-
-  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - 48px) * 9 / 16 + 60px);
   }
 }
 
@@ -1782,13 +1790,12 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
     --yt-action-disabled: #b0b0b0;
     --yt-social-icon-filter: none;
     --yt-social-icon-opacity: 0.9;
-    --yt-username-filter: brightness(0.8) saturate(1.05);
+    --yt-username-filter: brightness(0.85) saturate(1.05);
     --yt-emoji-bg: 255, 255, 255;
     --yt-emoji-text: 15, 15, 15;
     --yt-emoji-input: 241, 241, 241;
     --yt-emoji-border: rgba(0, 0, 0, 0.2);
     --yt-emoji-border-hover: rgba(0, 0, 0, 0.35);
-    --yt-player-frame-bg: #ffffff;
 
     /* Owncast 调色板中被源码直接引用的几项 (其余保持深色定义) */
     --color-owncast-palette-0: #e5e5e5;
@@ -1851,13 +1858,12 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   --yt-action-disabled: #b0b0b0;
   --yt-social-icon-filter: none;
   --yt-social-icon-opacity: 0.9;
-  --yt-username-filter: brightness(0.9) saturate(1.05);
+  --yt-username-filter: brightness(0.85) saturate(1.05);
   --yt-emoji-bg: 255, 255, 255;
   --yt-emoji-text: 15, 15, 15;
   --yt-emoji-input: 241, 241, 241;
   --yt-emoji-border: rgba(0, 0, 0, 0.2);
   --yt-emoji-border-hover: rgba(0, 0, 0, 0.35);
-  --yt-player-frame-bg: #ffffff;
 
   /* Owncast 调色板中被源码直接引用的几项 (其余保持深色定义) */
   --color-owncast-palette-0: #e5e5e5;

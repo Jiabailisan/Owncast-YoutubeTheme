@@ -27,7 +27,7 @@
  *
  * 顶栏、用户菜单、聊天栏由 CSS 负责; 本脚本处理 emoji picker、主题切换和粘贴清理.
  *
- * 版本: 5.4 (2026-10)
+ * 版本: 5.5 (2026-11)
  */
 (() => {
   if (window.__ytEmojiFixInstalled) {
@@ -226,14 +226,21 @@
     }
   };
 
-  const init = () => {
-    /* 只有带第 21 节按钮样式的主题 CSS (v5.2+) 才创建按钮 */
-    const themeReady = getComputedStyle(document.documentElement)
+  const isThemeReady = () =>
+    getComputedStyle(document.documentElement)
       .getPropertyValue('--yt-theme-toggle-ready')
-      .trim();
+      .trim() === '1';
 
-    if (themeReady !== '1' || document.getElementById('yt-theme-toggle')) {
-      return;
+  /* 先立刻应用已保存的主题模式, 避免等待 /api/config 注入 customStyles 时闪烁 */
+  const earlySaved = readSavedMode();
+  if (earlySaved) {
+    applyMode(earlySaved);
+  }
+
+  const mount = () => {
+    /* 只有带第 21 节按钮样式的主题 CSS (v5.2+) 才创建按钮 */
+    if (!isThemeReady() || document.getElementById('yt-theme-toggle')) {
+      return isThemeReady();
     }
 
     const saved = readSavedMode();
@@ -291,7 +298,7 @@
       /* 兜底: 没有顶栏的页面仍用左下角浮动按钮 */
       button.classList.add('yt-theme-toggle--floating');
       document.body.appendChild(button);
-      return;
+      return true;
     }
 
     const directChildOfHeader = (el) => {
@@ -335,13 +342,15 @@
         header.appendChild(button);
       }
 
-      /* 和用户信息按钮保持同高 */
+      /* 和用户信息按钮保持同高; 聊天离线时恢复 CSS 默认高度 */
       const menu = header.querySelector('#user-menu');
       if (menu) {
         const height = Math.round(menu.getBoundingClientRect().height);
         if (height > 0) {
           button.style.height = `${height}px`;
         }
+      } else {
+        button.style.height = '';
       }
     };
 
@@ -351,6 +360,58 @@
     const headerObserver = new MutationObserver(() => place());
     headerObserver.observe(header, { childList: true });
     window.addEventListener('resize', place);
+    return true;
+  };
+
+  /* Owncast 的 <Theme /> 需等 /api/config 返回才注入 customStyles,
+     脚本若更早执行则监听 DOM 变化并有限重试, 直到样式就绪. */
+  const init = () => {
+    if (mount()) {
+      return;
+    }
+
+    let attempts = 0;
+    let timer = null;
+
+    const stop = () => {
+      readyObserver.disconnect();
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    const tryMount = () => {
+      if (mount()) {
+        stop();
+        return true;
+      }
+      return false;
+    };
+
+    const readyObserver = new MutationObserver(() => {
+      tryMount();
+    });
+    readyObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    const poll = () => {
+      timer = null;
+      if (tryMount()) {
+        return;
+      }
+      attempts += 1;
+      if (attempts < 60) {
+        timer = window.setTimeout(poll, 100);
+      } else {
+        stop();
+      }
+    };
+
+    timer = window.setTimeout(poll, 100);
   };
 
   if (document.body) {
@@ -383,6 +444,36 @@
     return !node.textContent.replace(/\u200B/g, '').trim() && !node.querySelector('img');
   };
 
+  const replaceTextKeepingCaret = (textNode, next, side) => {
+    const value = textNode.nodeValue;
+    if (next === value) {
+      return;
+    }
+
+    const sel = window.getSelection();
+    const hadCaret =
+      sel &&
+      sel.rangeCount > 0 &&
+      sel.isCollapsed &&
+      sel.anchorNode === textNode;
+    const oldOffset = hadCaret ? sel.anchorOffset : 0;
+
+    textNode.nodeValue = next;
+
+    if (hadCaret) {
+      const removed = value.length - next.length;
+      const newOffset =
+        side === 'start'
+          ? Math.max(0, oldOffset - removed)
+          : Math.min(next.length, oldOffset);
+      const range = document.createRange();
+      range.setStart(textNode, newOffset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  };
+
   const trimEdgeText = (node, side) => {
     if (!node) {
       return;
@@ -390,9 +481,7 @@
     if (node.nodeType === Node.TEXT_NODE) {
       const value = node.nodeValue;
       const next = side === 'start' ? value.replace(/^\s+/, '') : value.replace(/\s+$/, '');
-      if (next !== value) {
-        node.nodeValue = next;
-      }
+      replaceTextKeepingCaret(node, next, side);
       return;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) {
@@ -412,13 +501,15 @@
     if (target && target.nodeValue) {
       const value = target.nodeValue;
       const next = side === 'start' ? value.replace(/^\s+/, '') : value.replace(/\s+$/, '');
-      if (next !== value) {
-        target.nodeValue = next;
-      }
+      replaceTextKeepingCaret(target, next, side);
     }
   };
 
   const clean = (el) => {
+    const sel = window.getSelection();
+    const activeInside =
+      sel && sel.rangeCount > 0 && el.contains(sel.anchorNode);
+
     while (el.firstChild && isBlankNode(el.firstChild)) {
       el.removeChild(el.firstChild);
     }
@@ -433,9 +524,19 @@
     while (el.lastChild && isBlankNode(el.lastChild)) {
       el.removeChild(el.lastChild);
     }
+
+    /* 若光标所在空白节点被删掉, 将光标落回末尾避免跳到开头 */
+    if (activeInside && (!sel.rangeCount || !el.contains(sel.anchorNode))) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
   };
 
-  /* Owncast 自己的 onPaste 会 sanitize 后 insertHTML; 等它插入完再清理. */
+  /* Owncast 自己的 onPaste 会 sanitize 后 insertHTML; 等它插入完再清理.
+     DOM 变更会自动触发 ContentEditable 内部的 MutationObserver 同步草稿. */
   document.addEventListener(
     'paste',
     (event) => {
@@ -446,8 +547,6 @@
       }
       window.setTimeout(() => {
         clean(el);
-        /* 让 React 的 onContentChange / draft 同步清理后的内容 */
-        el.dispatchEvent(new Event('input', { bubbles: true }));
       }, 0);
     },
     true,

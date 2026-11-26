@@ -2,11 +2,12 @@
  * YouTube Live Theme for Owncast v0.3.0 Original
  * --------------------------------------------------------------------------
  * 作者: KobayashiKotori
- * 版本: v5.11 (2026-10)
+ * 版本: v5.12 (2026-11)
  * 许可: MIT License
  *
  * 注意:
- *   - 无法访问 Google Fonts 时, 删除第 1 节的 @import 即可.
+ *   - 默认使用系统无衬线字体栈 (免外链, 国内网络不阻塞);
+ *     如需 Google Fonts Roboto, 取消第 1 节的 @import 注释即可.
  *   - 想保留自己的站点 Logo, 删除「顶栏 Logo」一段.
  *   - 日间主题跟随系统/浏览器浅色偏好自动启用;
  *     也可用 <html data-theme="light"> / <html data-theme="dark"> 强制.
@@ -40,7 +41,9 @@
    ========================================================================== */
 
 /* 1. 字体 ------------------------------------------------------------------------- */
+/* 如需加载外链 Roboto 字体, 取消下面注释 (国内网络无法直连时请保持注释):
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+*/
 
 /* 2. 主题变量 ----------------------------------------------------------------------- */
 :root {
@@ -90,7 +93,6 @@
   --yt-action-disabled: #5a5a5a;
   --yt-on-dark: #f1f1f1;
   --yt-on-video: #f1f1f1;
-  --yt-player-frame-bg: #000000;
   --yt-social-icon-filter: brightness(0) invert(1);
   --yt-social-icon-opacity: 0.88;
   --yt-username-filter: none;
@@ -392,19 +394,18 @@ body::-webkit-scrollbar,
 }
 
 /* 6. 播放器外壳 ---------------------------------------------------------------------- */
-/* 播放器外层只保留尺寸/间距/圆角; video.js 控制栏/菜单规则见下.
-   操作按钮的 top 公式假定 #player 仍为 16:9;
-   如果 video.js 的菜单/浮层需要超出容器, 去掉 overflow: hidden. */
+/* 播放器外层保留尺寸/间距/圆角; 下方 6b 节将纯原版 Video.js 重塑为魔改版同款现代悬浮控制栏
+   (不包含流模式切换与统计面板). */
 #player {
   width: 100%;
   height: auto !important;
   max-height: none !important;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-aspect-ratio, 16 / 9);
   margin: 16px 24px 0;
   border-radius: 12px;
   overflow: hidden;
-  /* 外框底色跟随主题: 深色黑, 日间白; 避免浅色底上圆角/1px 边缘露出黑缝 */
-  background-color: var(--yt-player-frame-bg);
+  isolation: isolate;
+  background-color: #000000;
 }
 
 @media (min-width: 769px) {
@@ -413,34 +414,16 @@ body::-webkit-scrollbar,
   }
 }
 
-/* 1. 控制栏半透明 */
-.vjs-owncast .vjs-control-bar {
-  background-color: rgba(28, 28, 28, 0.55) !important;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-/* 2. 齿轮菜单勾选后不再切换背景色 */
-.vjs-owncast .vjs-menu li.vjs-selected,
-.vjs-owncast .vjs-menu li.vjs-selected:focus,
-.vjs-owncast .vjs-menu li.vjs-selected:hover,
-.vjs-owncast .vjs-menu li[aria-checked="true"] {
-  background-color: transparent !important;
-  color: inherit !important;
-}
-
-/* video.js 控件始终显示在黑色视频上, 不跟随日间主题变深 */
-.vjs-owncast.video-js,
-.vjs-owncast .vjs-control-bar,
-.vjs-owncast .vjs-control,
-.vjs-owncast .vjs-menu li,
-.vjs-owncast .vjs-loading-spinner {
-  color: var(--yt-on-video) !important;
-}
-
-/* video.js 外层也铺同一个底色, 避免视频未盖满时在浅色页面上露出黑边 */
-.vjs-owncast.video-js {
-  background-color: var(--yt-player-frame-bg) !important;
+/* 全屏时复位圆角/外边距/宽高比, 避免在非 16:9 屏幕上留黑框或白边 */
+#player:fullscreen,
+#player:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background-color: #000000 !important;
 }
 
 /* /embed/video: 播放器要铺满视口, 不能套用主站的边距和 16:9 盒子 */
@@ -449,6 +432,485 @@ body::-webkit-scrollbar,
   border-radius: 0;
   aspect-ratio: auto;
   height: calc(100vh - var(--status-bar-height)) !important;
+}
+
+/* 6b. 原版 Video.js 现代悬浮播放器皮肤 (对齐魔改版视觉, 无流模式切换与统计面板) ----------- */
+.vjs-owncast.video-js {
+  background-color: #000000 !important;
+  color: var(--yt-on-video) !important;
+  font-family: var(--font-owncast-body) !important;
+  overflow: hidden;
+}
+
+.vjs-owncast.video-js.vjs-fullscreen,
+.vjs-owncast.video-js:fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+.vjs-owncast .vjs-control-bar,
+.vjs-owncast .vjs-control,
+.vjs-owncast .vjs-menu li,
+.vjs-owncast .vjs-loading-spinner {
+  color: var(--yt-on-video) !important;
+}
+
+/* 底部柔光渐变遮罩, 跟随控制栏淡入淡出 */
+.vjs-owncast.video-js::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 38%;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.vjs-owncast.video-js.vjs-has-started.vjs-user-inactive.vjs-playing::after,
+.vjs-owncast.video-js.vjs-controls-disabled::after {
+  opacity: 0;
+}
+
+/* 居中圆形毛玻璃播放按钮 (68x68, 对齐 .centerPlay; 不覆盖 Video.js 的隐藏状态) */
+.vjs-owncast .vjs-big-play-button {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 68px !important;
+  height: 68px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff !important;
+  font-size: 32px !important;
+  line-height: 68px !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.36);
+  transition: background-color 0.16s ease !important;
+}
+
+.vjs-owncast .vjs-big-play-button .vjs-icon-placeholder::before {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 68px !important;
+  transform: translateX(2px);
+}
+
+.vjs-owncast .vjs-big-play-button:hover,
+.vjs-owncast:hover .vjs-big-play-button {
+  background-color: rgba(0, 0, 0, 0.72) !important;
+  font-size: 32px !important;
+  text-shadow: none !important;
+}
+
+/* 压掉原版 VideoJS.scss 里 .vjs-big-play-button :hover 的 font-size: 10rem 放大 */
+.vjs-owncast .vjs-big-play-button .vjs-icon-placeholder:hover {
+  font-size: inherit !important;
+  text-shadow: none !important;
+}
+
+/* 静音自动播放提示: 改为右下角胶囊按钮 (对齐 .bigUnmuteButton) */
+.vjs-owncast .vjs-big-unmute-button.vjs-control:not(.vjs-hidden) {
+  inset: auto max(16px, env(safe-area-inset-right))
+    calc(max(14px, env(safe-area-inset-bottom)) + 54px) auto !important;
+  z-index: 4 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 6px 12px !important;
+  gap: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 999px !important;
+  background-color: rgba(0, 0, 0, 0.72) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  transition: bottom 0.2s ease, background-color 0.15s ease !important;
+}
+
+.vjs-owncast .vjs-big-unmute-button.vjs-control::after {
+  content: 'Unmute';
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.vjs-owncast .vjs-big-unmute-button.vjs-control:hover {
+  background-color: rgba(0, 0, 0, 0.86) !important;
+}
+
+.vjs-owncast .vjs-big-unmute-button.vjs-control .vjs-icon-placeholder svg {
+  width: 18px !important;
+  height: 18px !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.vjs-owncast .vjs-big-unmute-button.vjs-control:hover .vjs-icon-placeholder svg {
+  transform: none !important;
+  filter: none !important;
+}
+
+.vjs-owncast.vjs-has-started.vjs-user-inactive.vjs-playing .vjs-big-unmute-button.vjs-control {
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+}
+
+/* 现代白色圆环加载动画 (对齐 .loadingSpinner) */
+.vjs-owncast .vjs-loading-spinner {
+  top: 50% !important;
+  left: 50% !important;
+  margin: 0 !important;
+  width: 48px !important;
+  height: 48px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: conic-gradient(from 0deg, #ffffff 0deg 90deg, rgba(255, 255, 255, 0.24) 90deg 360deg) !important;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000000 calc(100% - 4px));
+  transform: translate(-50%, -50%) !important;
+  animation: yt-vjs-spin 1s linear infinite !important;
+}
+
+.vjs-owncast .vjs-loading-spinner::before,
+.vjs-owncast .vjs-loading-spinner::after {
+  display: none !important;
+  content: none !important;
+}
+
+@keyframes yt-vjs-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* 悬浮毛玻璃圆角控制栏 (对齐 .controlBar; 不强写 display, 保留 Video.js 起播前隐藏行为) */
+.vjs-owncast .vjs-control-bar {
+  position: absolute !important;
+  left: max(16px, env(safe-area-inset-left)) !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  width: auto !important;
+  height: 44px !important;
+  padding: 0 6px !important;
+  align-items: center !important;
+  gap: 2px !important;
+  z-index: 4 !important;
+  background-color: rgba(0, 0, 0, 0.48) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 通用图标按钮 (36x36 圆角, 对齐 .iconButton) */
+.vjs-owncast .vjs-control-bar > .vjs-button,
+.vjs-owncast .vjs-control-bar .vjs-mute-control,
+.vjs-owncast .vjs-control-bar .vjs-quality-selector {
+  flex: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  opacity: 0.92;
+  transition: background-color 0.14s ease, opacity 0.14s ease;
+}
+
+.vjs-owncast .vjs-control-bar > .vjs-button:hover,
+.vjs-owncast .vjs-control-bar .vjs-quality-selector:hover,
+.vjs-owncast .vjs-control-bar .vjs-quality-selector.vjs-hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  opacity: 1;
+}
+
+.vjs-owncast .vjs-control-bar > .vjs-button:focus-visible,
+.vjs-owncast .vjs-control-bar .vjs-mute-control:focus-visible,
+.vjs-owncast .vjs-control-bar .vjs-quality-selector > .vjs-menu-button:focus-visible {
+  outline: none !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4) !important;
+}
+
+.vjs-owncast .vjs-control-bar > .vjs-button .vjs-icon-placeholder::before,
+.vjs-owncast .vjs-control-bar .vjs-mute-control .vjs-icon-placeholder::before,
+.vjs-owncast .vjs-control-bar .vjs-quality-selector .vjs-icon-placeholder::before {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 36px !important;
+  font-size: 1.65em !important;
+  text-shadow: none !important;
+}
+
+/* 悬浮展开音量胶囊 (对齐 .volumeGroup) */
+.vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal {
+  flex: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 34px !important;
+  width: 36px !important;
+  border-radius: 999px !important;
+  overflow: hidden;
+  transition: width 0.18s ease, background-color 0.16s ease !important;
+}
+
+.vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:hover,
+.vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover,
+.vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:has(:focus-visible) {
+  width: 120px !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.vjs-owncast .vjs-volume-panel .vjs-mute-control {
+  background: transparent !important;
+  height: 34px !important;
+}
+
+.vjs-owncast .vjs-volume-panel .vjs-volume-control.vjs-volume-horizontal {
+  display: flex !important;
+  align-items: center !important;
+  height: 34px !important;
+  width: 78px !important;
+  margin-right: 6px !important;
+}
+
+.vjs-owncast .vjs-volume-bar.vjs-slider-horizontal {
+  width: 72px !important;
+  height: 3px !important;
+  margin: 0 3px !important;
+  background-color: rgba(255, 255, 255, 0.35) !important;
+  border-radius: 2px !important;
+}
+
+.vjs-owncast .vjs-volume-bar.vjs-slider-horizontal .vjs-volume-level {
+  height: 3px !important;
+  background-color: #ffffff !important;
+  border-radius: 2px !important;
+}
+
+.vjs-owncast .vjs-volume-bar.vjs-slider-horizontal .vjs-volume-level::before {
+  top: -5.5px !important;
+  right: -7px !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* LIVE 指示按钮 (对齐 .liveButton / .liveDot; 保留 .vjs-hidden 隐藏) */
+.vjs-owncast .vjs-seek-to-live-control.vjs-control:not(.vjs-hidden),
+.vjs-owncast .vjs-live-control.vjs-control:not(.vjs-hidden) {
+  flex: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  height: 34px !important;
+  padding: 0 9px !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  opacity: 0.72;
+  transition: background-color 0.14s ease, opacity 0.14s ease;
+}
+
+.vjs-owncast .vjs-seek-to-live-control.vjs-control:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  opacity: 1;
+}
+
+.vjs-owncast .vjs-seek-to-live-control.vjs-at-live-edge {
+  opacity: 1;
+}
+
+.vjs-owncast .vjs-seek-to-live-control .vjs-icon-placeholder {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 8px !important;
+  height: 8px !important;
+  margin-right: 0 !important;
+}
+
+.vjs-owncast .vjs-seek-to-live-control .vjs-icon-placeholder::before {
+  content: '' !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background-color: #8a8a8a !important;
+  font-size: 0 !important;
+}
+
+.vjs-owncast .vjs-seek-to-live-control.vjs-at-live-edge .vjs-icon-placeholder::before {
+  background-color: #ff3333 !important;
+  box-shadow: 0 0 6px rgba(255, 51, 51, 0.7) !important;
+}
+
+.vjs-owncast .vjs-seek-to-live-text {
+  line-height: 1 !important;
+  color: #ffffff !important;
+}
+
+/* 左侧与右侧按钮之间的弹性占位 */
+.vjs-owncast .vjs-progress-control {
+  flex: 1 1 auto !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 设置齿轮弹出菜单 (对齐 .settingsMenu: 深色毛玻璃卡片 + 勾选勾号) */
+.vjs-owncast .vjs-quality-selector .vjs-menu {
+  left: auto !important;
+  right: 0 !important;
+  bottom: 50px !important;
+  width: min(240px, calc(100vw - 56px)) !important;
+  height: auto !important;
+  margin-bottom: 0 !important;
+  border-top: 0 !important;
+  z-index: 6 !important;
+}
+
+.vjs-owncast .vjs-quality-selector .vjs-menu-content {
+  position: static !important;
+  width: 100% !important;
+  bottom: auto !important;
+  max-height: min(60vh, 420px) !important;
+  padding: 6px !important;
+  color: #ffffff !important;
+  background-color: rgba(24, 24, 24, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.vjs-owncast .vjs-quality-selector .vjs-menu li.vjs-menu-item {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 34px !important;
+  padding: 7px 10px !important;
+  border-radius: 5px !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  transition: background-color 0.12s ease;
+}
+
+.vjs-owncast .vjs-quality-selector .vjs-menu li.vjs-menu-item:hover,
+.vjs-owncast .vjs-quality-selector .vjs-menu li.vjs-menu-item:focus-visible {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  outline: none !important;
+}
+
+/* 清晰度选项勾选后保持深色透明底 + 右侧白色对勾 (低延迟开关自带 ON/OFF 胶囊不重复加勾) */
+.vjs-owncast .vjs-menu li.vjs-selected,
+.vjs-owncast .vjs-menu li.vjs-selected:focus,
+.vjs-owncast .vjs-menu li[aria-checked="true"] {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.vjs-owncast .vjs-menu li.vjs-selected:hover,
+.vjs-owncast .vjs-menu li[aria-checked="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.vjs-owncast .vjs-quality-selector .vjs-menu li.vjs-selected:not(:has(.latency-toggle-state))::after,
+.vjs-owncast .vjs-quality-selector .vjs-menu li[aria-checked="true"]:not(:has(.latency-toggle-state))::after {
+  content: '✓';
+  margin-left: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* 低延迟项内部容器占满整行 */
+.vjs-owncast .vjs-quality-selector .vjs-menu li.vjs-menu-item:has(.latency-toggle-state) > span {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* 菜单分割线 */
+.vjs-owncast .vjs-quality-selector .vjs-menu li:has(hr) {
+  min-height: 0 !important;
+  padding: 4px 2px !important;
+  pointer-events: none !important;
+  background: transparent !important;
+}
+
+.vjs-owncast .vjs-quality-selector .vjs-menu li:has(hr) hr {
+  width: 100%;
+  border: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+}
+
+/* 悬停提示位置抬高到悬浮控制栏上方 */
+@media (hover: hover) and (pointer: fine) {
+  .vjs-owncast .vjs-control-bar .vjs-control:hover .vjs-control-text {
+    bottom: 50px !important;
+    border-radius: 6px !important;
+    background: rgba(20, 20, 20, 0.92) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .vjs-owncast .vjs-control-bar {
+    left: max(20px, env(safe-area-inset-left)) !important;
+    right: max(20px, env(safe-area-inset-right)) !important;
+    height: 42px !important;
+    padding: 0 5px !important;
+  }
+
+  .vjs-owncast .vjs-control-bar > .vjs-button,
+  .vjs-owncast .vjs-control-bar .vjs-mute-control,
+  .vjs-owncast .vjs-control-bar .vjs-quality-selector {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal,
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:hover,
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover {
+    width: 32px !important;
+    background: transparent !important;
+  }
+
+  .vjs-owncast .vjs-volume-panel .vjs-volume-control {
+    display: none !important;
+  }
+
+  .vjs-owncast .vjs-quality-selector .vjs-menu {
+    bottom: 48px !important;
+  }
 }
 
 /* 7. 直播状态条 ---------------------------------------------------------------------- */
@@ -489,18 +951,24 @@ div:has(> .ant-row > #player) {
   position: relative;
 }
 
-/* 开播时: 操作按钮绝对定位到直播介绍右上角 */
+/* 开播时: 操作按钮以零高度行锚定在频道介绍右上角, 自动跟随任意画面比例与状态栏高度 */
 @media (min-width: 769px) {
   div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    position: absolute;
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - var(--yt-chat-width) - 72px) * 9 / 16 + 60px);
-    right: 12px;
+    position: relative;
+    height: 0;
+    overflow: visible;
+    align-items: flex-start;
+    padding-right: 12px;
     z-index: 5;
+    pointer-events: none;
   }
 
-  /* 隐藏聊天后, 播放器占满主列 */
-  body:not(:has(#chat-container)) div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - 48px) * 9 / 16 + 60px);
+  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) [class*="actionButtonsContainer"] {
+    height: auto;
+  }
+
+  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) .ant-btn {
+    pointer-events: auto;
   }
 
   /* 隐藏聊天: 顶栏右侧留白 24px, 与播放器右边缘对齐 */
@@ -621,22 +1089,22 @@ div:has(> #skip-to-content) {
   margin: 0 0 10px !important;
 }
 
-/* ContentHeader 内部靠左: root > logoTitleSection > logo > LogoRoot > container > img */
-div:has(> div > div > div > div > img[alt='Logo']) {
+/* ContentHeader 内部靠左: 直接命中模块类名, 避免多层 div:has() 与全局 img[alt='Logo'] 误伤 */
+[class*="ContentHeader-module"][class*="__root"] {
   padding-left: 0 !important;
 }
 
-div:has(> div > div > div > img[alt='Logo']) {
+[class*="ContentHeader-module"][class*="__logoTitleSection"] {
   align-items: flex-start !important;
 }
 
-div:has(> div > div > img[alt='Logo']) {
+[class*="ContentHeader-module"][class*="__logo"]:not([class*="__logoTitleSection"]) {
   margin-left: 0 !important;
   margin-right: 12px !important;
 }
 
 /* 频道头像: 96px 深色圆 + 描边 */
-div:has(> div > img[alt='Logo']) {
+[class*="ContentHeader-module"] [class*="Logo-module"][class*="__root"] {
   width: 96px !important;
   height: 96px !important;
   margin-right: 12px !important;
@@ -646,7 +1114,7 @@ div:has(> div > img[alt='Logo']) {
   flex-shrink: 0;
 }
 
-div:has(> div > img[alt='Logo']) > div {
+[class*="ContentHeader-module"] [class*="Logo-module"][class*="__container"] {
   width: 100% !important;
   height: 100% !important;
   display: flex !important;
@@ -656,7 +1124,7 @@ div:has(> div > img[alt='Logo']) > div {
   border-radius: 50%;
 }
 
-img[alt='Logo'] {
+[class*="ContentHeader-module"] [class*="Logo-module"] img[alt='Logo'] {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
@@ -870,6 +1338,7 @@ img[alt='Logo'] {
   display: none !important;
 }
 
+#chat-container .chat-message_user [class*='__user '],
 #chat-container .chat-message_user [class$='__user'],
 #chat-container .chat-message_user [class*='__repeatUser'] {
   display: flex !important;
@@ -886,7 +1355,7 @@ img[alt='Logo'] {
 }
 
 /* 徽章保持深色底, 前景仍是用户色; 日间不会变成浅灰块 */
-#chat-container .chat-message_user [class$="__badge"] {
+#chat-container .chat-message_user .chat-user-badge {
   background-color: #0f0f0f !important;
 }
 
@@ -894,6 +1363,7 @@ img[alt='Logo'] {
   content: '@';
 }
 
+#chat-container .chat-message_user [class*='__user ']::after,
 #chat-container .chat-message_user [class$='__user']::after,
 #chat-container .chat-message_user [class*='__repeatUser']::after {
   content: '：';
@@ -1109,6 +1579,7 @@ em-emoji-picker {
 /* /embed/chat/readonly 没有 .embed-container, 聊天栏需要自己铺满 */
 body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container {
   width: 100vw !important;
+  min-width: 0 !important;
   max-width: none !important;
   height: 100vh !important;
   margin: 0 !important;
@@ -1207,8 +1678,8 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   color: var(--yt-text) !important;
 }
 
-/* Form 直系错误 div 没有 CSS Module 类名, 直接给红色 */
-.ant-modal-container .ant-form > div:not(:has(.ant-btn)) {
+/* NameChangeModal 表单校验错误 */
+.ant-modal-container [class*="NameChangeModal"][class*="__error"] {
   color: #ff4b39 !important;
 }
 
@@ -1638,7 +2109,7 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   }
 
   /* ContentHeader 与播放器左对齐 (MobileContent 没有 #skip-to-content) */
-  div:has(> div > div > div > div > img[alt='Logo']) {
+  [class*="ContentHeader-module"][class*="__root"] {
     margin-left: 16px !important;
   }
 
@@ -1699,7 +2170,8 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 @media (min-width: 769px) and (max-aspect-ratio: 1/1) {
   [class*="Content-module"][class*="__main"]:not([class*="mainColumn"]) {
     flex-direction: column !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     height: calc(100vh - var(--header-height)) !important;
   }
 
@@ -1710,10 +2182,13 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
     overflow: visible !important;
   }
 
+  [class*="bottomPageContentContainer"] {
+    min-height: auto;
+  }
+
   #chat-container {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    height: auto !important;
+    flex: 0 0 auto !important;
+    height: clamp(380px, 48vh, 560px) !important;
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -1723,10 +2198,6 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
 
   .global-header {
     padding-right: 24px !important;
-  }
-
-  div:has(> .ant-row > #player) > .ant-row:has([class*="actionButtonsContainer"]) {
-    top: calc(8px + (min(100vw, var(--yt-main-max)) - 48px) * 9 / 16 + 60px);
   }
 }
 
@@ -1798,13 +2269,12 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
     --yt-action-disabled: #b0b0b0;
     --yt-social-icon-filter: none;
     --yt-social-icon-opacity: 0.9;
-    --yt-username-filter: brightness(0.8) saturate(1.05);
+    --yt-username-filter: brightness(0.85) saturate(1.05);
     --yt-emoji-bg: 255, 255, 255;
     --yt-emoji-text: 15, 15, 15;
     --yt-emoji-input: 241, 241, 241;
     --yt-emoji-border: rgba(0, 0, 0, 0.2);
     --yt-emoji-border-hover: rgba(0, 0, 0, 0.35);
-    --yt-player-frame-bg: #ffffff;
 
     /* Owncast 调色板中被源码直接引用的几项 (其余保持深色定义) */
     --color-owncast-palette-0: #e5e5e5;
@@ -1867,13 +2337,12 @@ body:not(:has(.ant-layout)):not(:has(.embed-container)) #chat-container #virtuos
   --yt-action-disabled: #b0b0b0;
   --yt-social-icon-filter: none;
   --yt-social-icon-opacity: 0.9;
-  --yt-username-filter: brightness(0.9) saturate(1.05);
+  --yt-username-filter: brightness(0.85) saturate(1.05);
   --yt-emoji-bg: 255, 255, 255;
   --yt-emoji-text: 15, 15, 15;
   --yt-emoji-input: 241, 241, 241;
   --yt-emoji-border: rgba(0, 0, 0, 0.2);
   --yt-emoji-border-hover: rgba(0, 0, 0, 0.35);
-  --yt-player-frame-bg: #ffffff;
 
   /* Owncast 调色板中被源码直接引用的几项 (其余保持深色定义) */
   --color-owncast-palette-0: #e5e5e5;

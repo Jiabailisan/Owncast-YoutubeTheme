@@ -1,12 +1,16 @@
 # Owncast-YoutubeTheme
-仿YoutubeLive主题
+仿 YouTube Live 主题（支持深色 / 日间自动与手动切换）
 
-1.将youtube-live.original.css中的内容填入到Configuration-General-Appearance的Customize your page styling with CSS
+## 使用方式
 
-2.将youtube-live.js中的内容填入到Configuration-General-Custom Scripting的Customize your page with Javascript
+1. **自定义 CSS**（`Configuration -> General -> Appearance -> Customize your page styling with CSS`）：
+   - **纯原版 Owncast**：使用 `youtube-live.original.css`（包含仿魔改版的现代悬浮播放器控制栏样式，不含流模式切换与统计面板）。
+   - **魔改版 Owncast（内置 WebRTC / 现代控制栏）**：使用 `youtube-live.css`。
+
+2. **自定义脚本**（`Configuration -> General -> Custom Scripting -> Customize your page with Javascript`）：
+   - 填入 `youtube-live.js`（负责顶栏 Auto / Dark / Light 主题切换、Emoji Picker Shadow DOM 修正、聊天粘贴清理）。
+
+3. **OBS 聊天弹幕叠加层**：
+   - 浏览器源地址填 `https://ip:port/embed/chat/readonly`，自定义 CSS 填入 `obs-chat.css`。
 
 预览：https://live-1.fantasyworld.ltd
-
-若要将聊天窗口添加到OBS，可以使用https://ip:port/embed/chat/readonly 搭配obs-chat.css使用
-
-**注：youtube-live.css是未修改播放器控制栏的版本
