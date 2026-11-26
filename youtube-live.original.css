@@ -617,6 +617,44 @@ body::-webkit-scrollbar,
   -webkit-backdrop-filter: blur(4px);
 }
 
+/* 控制栏顺序对齐魔改版: 左 [播放 / 音量 / LIVE] —— 弹性空位 —— 右 [设置 / 画中画 / AirPlay / 全屏] */
+.vjs-owncast .vjs-play-control {
+  order: 1 !important;
+}
+
+.vjs-owncast .vjs-volume-panel {
+  order: 2 !important;
+}
+
+.vjs-owncast .vjs-seek-to-live-control,
+.vjs-owncast .vjs-live-control {
+  order: 3 !important;
+}
+
+.vjs-owncast .vjs-progress-control,
+.vjs-owncast .vjs-custom-control-spacer {
+  order: 4 !important;
+  flex: 1 1 auto !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.vjs-owncast .vjs-quality-selector {
+  order: 10 !important;
+}
+
+.vjs-owncast .vjs-picture-in-picture-control {
+  order: 11 !important;
+}
+
+.vjs-owncast .vjs-airplay {
+  order: 12 !important;
+}
+
+.vjs-owncast .vjs-fullscreen-control {
+  order: 13 !important;
+}
+
 /* 通用图标按钮 (36x36 圆角, 对齐 .iconButton) */
 .vjs-owncast .vjs-control-bar > .vjs-button,
 .vjs-owncast .vjs-control-bar .vjs-mute-control,
@@ -658,7 +696,7 @@ body::-webkit-scrollbar,
   text-shadow: none !important;
 }
 
-/* 悬浮展开音量胶囊 (对齐 .volumeGroup) */
+/* 悬浮展开音量胶囊 (对齐 .volumeGroup, 纯 CSS 滑块圆点保证严格垂直居中) */
 .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal {
   flex: none !important;
   display: inline-flex !important;
@@ -672,8 +710,9 @@ body::-webkit-scrollbar,
 
 .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:hover,
 .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover,
+.vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-slider-active,
 .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:has(:focus-visible) {
-  width: 120px !important;
+  width: 126px !important;
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
@@ -682,51 +721,88 @@ body::-webkit-scrollbar,
   height: 34px !important;
 }
 
+.vjs-owncast .vjs-volume-panel .vjs-mute-control .vjs-icon-placeholder::before {
+  line-height: 34px !important;
+}
+
 .vjs-owncast .vjs-volume-panel .vjs-volume-control.vjs-volume-horizontal {
   display: flex !important;
   align-items: center !important;
+  width: 0 !important;
   height: 34px !important;
-  width: 78px !important;
-  margin-right: 6px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  transition: width 0.18s ease, opacity 0.14s ease !important;
+}
+
+.vjs-owncast .vjs-volume-panel:hover .vjs-volume-control.vjs-volume-horizontal,
+.vjs-owncast .vjs-volume-panel.vjs-hover .vjs-volume-control.vjs-volume-horizontal,
+.vjs-owncast .vjs-volume-panel.vjs-slider-active .vjs-volume-control.vjs-volume-horizontal,
+.vjs-owncast .vjs-volume-panel:has(:focus-visible) .vjs-volume-control.vjs-volume-horizontal {
+  width: 82px !important;
+  margin: 0 6px 0 2px !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
 }
 
 .vjs-owncast .vjs-volume-bar.vjs-slider-horizontal {
-  width: 72px !important;
+  position: relative !important;
+  width: 70px !important;
   height: 3px !important;
-  margin: 0 3px !important;
+  margin: 0 6px !important;
   background-color: rgba(255, 255, 255, 0.35) !important;
   border-radius: 2px !important;
 }
 
 .vjs-owncast .vjs-volume-bar.vjs-slider-horizontal .vjs-volume-level {
+  position: relative !important;
+  top: 0 !important;
+  bottom: auto !important;
   height: 3px !important;
   background-color: #ffffff !important;
   border-radius: 2px !important;
 }
 
 .vjs-owncast .vjs-volume-bar.vjs-slider-horizontal .vjs-volume-level::before {
-  top: -5.5px !important;
-  right: -7px !important;
-  font-size: 14px !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: auto !important;
+  right: -6px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-50%) !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
 }
 
-/* LIVE 指示按钮 (对齐 .liveButton / .liveDot; 保留 .vjs-hidden 隐藏) */
-.vjs-owncast .vjs-seek-to-live-control.vjs-control:not(.vjs-hidden),
-.vjs-owncast .vjs-live-control.vjs-control:not(.vjs-hidden) {
+/* LIVE 指示按钮 (对齐 .liveButton / .liveDot; liveui 下隐藏旧版 .vjs-live-control 避免出现两个 LIVE) */
+.vjs-owncast.vjs-liveui .vjs-live-control {
+  display: none !important;
+}
+
+.vjs-owncast.vjs-live.vjs-liveui .vjs-seek-to-live-control.vjs-control:not(.vjs-hidden) {
   flex: none !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
   width: auto !important;
+  min-width: 0 !important;
   height: 34px !important;
-  padding: 0 9px !important;
+  padding: 0 8px !important;
   border-radius: 6px !important;
   color: #ffffff !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   letter-spacing: 0.03em !important;
+  line-height: 1 !important;
   opacity: 0.72;
   transition: background-color 0.14s ease, opacity 0.14s ease;
 }
@@ -767,13 +843,6 @@ body::-webkit-scrollbar,
 .vjs-owncast .vjs-seek-to-live-text {
   line-height: 1 !important;
   color: #ffffff !important;
-}
-
-/* 左侧与右侧按钮之间的弹性占位 */
-.vjs-owncast .vjs-progress-control {
-  flex: 1 1 auto !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
 }
 
 /* 设置齿轮弹出菜单 (对齐 .settingsMenu: 深色毛玻璃卡片 + 勾选勾号) */
@@ -899,7 +968,9 @@ body::-webkit-scrollbar,
 
   .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal,
   .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:hover,
-  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover {
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover,
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-slider-active,
+  .vjs-owncast .vjs-volume-panel.vjs-volume-panel-horizontal:has(:focus-visible) {
     width: 32px !important;
     background: transparent !important;
   }
