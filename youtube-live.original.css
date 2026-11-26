@@ -456,6 +456,17 @@ body::-webkit-scrollbar,
   color: var(--yt-on-video) !important;
 }
 
+/* 移除 Video.js 默认 .vjs-control:focus / :hover 的白色文字发光, 避免设置菜单内文字被继承发亮 */
+.vjs-owncast .vjs-control,
+.vjs-owncast .vjs-control:hover,
+.vjs-owncast .vjs-control:focus,
+.vjs-owncast .vjs-control:hover::before,
+.vjs-owncast .vjs-control:focus::before,
+.vjs-owncast .vjs-menu,
+.vjs-owncast .vjs-menu * {
+  text-shadow: none !important;
+}
+
 /* 底部柔光渐变遮罩, 跟随控制栏淡入淡出 */
 .vjs-owncast.video-js::after {
   content: '';
@@ -781,6 +792,13 @@ body::-webkit-scrollbar,
   transform: translateY(-50%) !important;
   font-size: 0 !important;
   line-height: 0 !important;
+}
+
+/* 隐藏音量条内部的黑色鼠标竖线 (.vjs-mouse-display) 与会被胶囊裁切的提示框 */
+.vjs-owncast .vjs-volume-bar .vjs-mouse-display,
+.vjs-owncast .vjs-volume-bar .vjs-volume-tooltip,
+.vjs-owncast .vjs-volume-panel .vjs-control-text {
+  display: none !important;
 }
 
 /* LIVE 指示按钮 (对齐 .liveButton / .liveDot; liveui 下隐藏旧版 .vjs-live-control 避免出现两个 LIVE) */
